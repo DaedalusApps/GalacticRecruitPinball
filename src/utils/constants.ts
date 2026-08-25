@@ -31,6 +31,7 @@ export const BALL = {
   ANGULAR_DAMPING: 0.05,
   RESTITUTION: 0.6,
   FRICTION: 0.1,
+  MAX_VELOCITY: 50,
   INITIAL_POSITION: { x: 8.8, y: -18, z: 0.5 } as const, // In the plunger lane
 } as const;
 

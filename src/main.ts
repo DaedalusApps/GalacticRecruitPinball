@@ -1,14 +1,17 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { PHYSICS, TABLE } from './utils/constants';
 import { TableScene } from './rendering/scene';
+import { PhysicsWorld } from './physics/world';
+import { Pinball } from './physics/ball';
 
 export class GameApp {
   public tableScene: TableScene;
   public scene: THREE.Scene;
   public camera: THREE.PerspectiveCamera;
   public renderer: THREE.WebGLRenderer;
+  public physicsWorld: PhysicsWorld;
   public world: CANNON.World;
+  public pinball: Pinball;
   public isRunning: boolean = false;
   private animFrameId: number | null = null;
   private lastTime: number = 0;
@@ -33,17 +36,13 @@ export class GameApp {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.2;
 
-    // 3. Initialize Cannon-es Physics World
-    this.world = new CANNON.World();
-    // Gravity pulls downwards along tilted Y-axis and into table Z-axis
-    const gx = 0;
-    const gy = -PHYSICS.GRAVITY_MAGNITUDE * Math.sin(PHYSICS.TABLE_TILT_RAD);
-    const gz = -PHYSICS.GRAVITY_MAGNITUDE * Math.cos(PHYSICS.TABLE_TILT_RAD);
-    this.world.gravity.set(gx, gy, gz);
+    // 3. Initialize Physics World & Pinball
+    this.physicsWorld = new PhysicsWorld();
+    this.world = this.physicsWorld.world;
 
-    // Default contact material
-    this.world.defaultContactMaterial.friction = TABLE.FRICTION;
-    this.world.defaultContactMaterial.restitution = TABLE.RESTITUTION;
+    this.pinball = new Pinball({ material: this.physicsWorld.ballMaterial });
+    this.physicsWorld.addPinball(this.pinball);
+    this.scene.add(this.pinball.mesh);
 
     // Handle Window Resizing
     window.addEventListener('resize', this.onResize);
@@ -73,8 +72,8 @@ export class GameApp {
   }
 
   public stepPhysics(deltaSec: number): void {
-    const clampedDelta = Math.min(deltaSec, 0.1);
-    this.world.step(PHYSICS.TIME_STEP, clampedDelta, PHYSICS.MAX_SUB_STEPS);
+    this.physicsWorld.step(deltaSec);
+    this.pinball.sync();
   }
 
   private animate = (now: number): void => {
