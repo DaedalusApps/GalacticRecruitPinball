@@ -84,6 +84,8 @@
         padding: 8px 16px;
         box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
         pointer-events: auto;
+        flex-wrap: wrap;
+        gap: 10px;
       }
 
       .hud-title {
@@ -96,29 +98,30 @@
 
       .hud-info {
         display: flex;
-        gap: 16px;
+        gap: 14px;
         font-size: 0.85rem;
         color: var(--color-neon-cyan);
         align-items: center;
+        flex-wrap: wrap;
       }
 
       .hud-info span {
         color: #ffffff;
       }
 
-      .camera-btn {
+      .hud-btn {
         background: rgba(0, 229, 255, 0.15);
         border: 1px solid var(--color-neon-cyan);
         color: var(--color-neon-cyan);
         font-family: var(--font-mono);
         font-size: 0.75rem;
-        padding: 2px 8px;
+        padding: 3px 8px;
         border-radius: 3px;
         cursor: pointer;
         transition: all 0.2s ease;
       }
 
-      .camera-btn:hover {
+      .hud-btn:hover {
         background: rgba(0, 229, 255, 0.35);
         box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
       }
@@ -143,6 +146,20 @@
         letter-spacing: 1px;
         text-shadow: 0 0 6px rgba(0, 255, 102, 0.7);
         white-space: nowrap;
+      }
+
+      #fps-display {
+        position: absolute;
+        bottom: 12px;
+        left: 12px;
+        background: rgba(0, 0, 0, 0.7);
+        border: 1px solid var(--color-neon-yellow);
+        color: var(--color-neon-yellow);
+        padding: 2px 8px;
+        font-size: 0.75rem;
+        border-radius: 3px;
+        pointer-events: none;
+        z-index: 50;
       }
 
       /* Attract Mode Overlay */
@@ -208,19 +225,186 @@
       }
 
       .attract-controls-box {
-        background: rgba(10, 15, 30, 0.8);
+        background: rgba(10, 15, 30, 0.85);
         border: 1px solid rgba(0, 229, 255, 0.3);
         border-radius: 6px;
         padding: 12px 20px;
         display: flex;
-        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 16px;
         font-size: 0.8rem;
         color: #ccddee;
+        max-width: 600px;
       }
 
       .attract-controls-box span {
         color: var(--color-neon-cyan);
         font-weight: bold;
+      }
+
+      /* Game Over Modal */
+      #game-over-modal {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(3, 4, 10, 0.88);
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 150;
+        padding: 20px;
+      }
+
+      .modal-card {
+        background: rgba(8, 12, 24, 0.95);
+        border: 2px solid var(--color-neon-pink);
+        border-radius: 8px;
+        box-shadow: 0 0 24px rgba(255, 0, 127, 0.4), inset 0 0 12px rgba(0, 229, 255, 0.2);
+        width: 100%;
+        max-width: 480px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+      }
+
+      .modal-title {
+        font-size: 2rem;
+        font-weight: 900;
+        letter-spacing: 4px;
+        color: var(--color-neon-pink);
+        text-shadow: 0 0 12px rgba(255, 0, 127, 0.8);
+      }
+
+      .modal-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        background: rgba(4, 7, 16, 0.8);
+        border: 1px solid var(--color-hud-border);
+        border-radius: 6px;
+        padding: 12px;
+        font-size: 0.85rem;
+      }
+
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .stat-label {
+        font-size: 0.7rem;
+        color: var(--color-neon-cyan);
+        letter-spacing: 1px;
+      }
+
+      .stat-val {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #ffffff;
+      }
+
+      #high-score-entry-section {
+        background: rgba(0, 255, 102, 0.08);
+        border: 1px dashed var(--color-neon-green);
+        border-radius: 6px;
+        padding: 12px;
+      }
+
+      .hs-prompt {
+        color: var(--color-neon-green);
+        font-size: 0.85rem;
+        font-weight: bold;
+        letter-spacing: 2px;
+        margin-bottom: 8px;
+      }
+
+      .hs-input-row {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      #initials-input {
+        width: 90px;
+        text-align: center;
+        font-family: var(--font-mono);
+        font-size: 1.3rem;
+        font-weight: 900;
+        letter-spacing: 4px;
+        color: #ffffff;
+        background: rgba(0, 0, 0, 0.7);
+        border: 2px solid var(--color-neon-green);
+        border-radius: 4px;
+        padding: 4px 8px;
+        text-transform: uppercase;
+        outline: none;
+      }
+
+      #initials-input:focus {
+        box-shadow: 0 0 10px rgba(0, 255, 102, 0.6);
+      }
+
+      .modal-leaderboard {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8rem;
+        margin-top: 4px;
+      }
+
+      .modal-leaderboard th {
+        color: var(--color-neon-cyan);
+        border-bottom: 1px solid var(--color-hud-border);
+        padding: 4px;
+        font-size: 0.7rem;
+        letter-spacing: 1px;
+      }
+
+      .modal-leaderboard td {
+        padding: 4px 6px;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+      }
+
+      .modal-btn {
+        background: rgba(0, 255, 102, 0.2);
+        border: 1px solid var(--color-neon-green);
+        color: var(--color-neon-green);
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex: 1;
+      }
+
+      .modal-btn:hover {
+        background: rgba(0, 255, 102, 0.4);
+        box-shadow: 0 0 12px rgba(0, 255, 102, 0.5);
+      }
+
+      .modal-btn.secondary {
+        background: rgba(0, 229, 255, 0.15);
+        border-color: var(--color-neon-cyan);
+        color: var(--color-neon-cyan);
+      }
+
+      .modal-btn.secondary:hover {
+        background: rgba(0, 229, 255, 0.35);
+        box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
       }
     </style>
   </head>
@@ -237,9 +421,11 @@
           <div id="attract-prompt" class="attract-prompt">PRESS SPACE OR TAP TO LAUNCH</div>
           <div class="attract-controls-box">
             <div><span>Z / M</span> FLIPPERS</div>
-            <div><span>SPACE</span> CHARGE PLUNGER</div>
+            <div><span>SPACE</span> LAUNCH</div>
             <div><span>X / . / ↑</span> NUDGE</div>
-            <div><span>C</span> CAMERA TOGGLE</div>
+            <div><span>C</span> CAMERA</div>
+            <div><span>S</span> SOUND</div>
+            <div><span>Y</span> FPS</div>
           </div>
         </div>
 
@@ -250,14 +436,73 @@
               <div class="hud-title">GALACTIC RECRUIT</div>
               <div class="hud-info">
                 <div>SCORE: <span id="score-display">000,000</span></div>
+                <div>HIGH: <span id="high-score-display">5,000,000</span></div>
                 <div>MULT: <span id="mult-display">1X</span></div>
                 <div>BALL: <span id="ball-display">1</span></div>
                 <div>RANK: <span id="rank-display">ROOKIE DEFENDER</span></div>
-                <button id="camera-btn" class="camera-btn">CAM: <span id="camera-mode-display">FIXED</span></button>
+                <button id="camera-btn" class="hud-btn">CAM: <span id="camera-mode-display">FIXED</span></button>
+                <button id="sound-btn" class="hud-btn">SFX: <span id="sound-status-display">ON</span></button>
               </div>
             </header>
             <div class="hud-ticker-bar">
               <div id="lcd-ticker" class="hud-ticker-text">GALACTIC RECRUIT DEFENDER READY</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FPS Counter (Debug) -->
+        <div id="fps-display" style="display: none;">FPS: <span id="fps-val">60</span></div>
+
+        <!-- Game Over / High Score Modal Overlay -->
+        <div id="game-over-modal">
+          <div class="modal-card">
+            <h2 class="modal-title">MISSION OVER</h2>
+            <div class="modal-stats">
+              <div class="stat-item">
+                <span class="stat-label">FINAL SCORE</span>
+                <span id="game-over-final-score" class="stat-val">0</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">RANK ACHIEVED</span>
+                <span id="game-over-final-rank" class="stat-val">ROOKIE</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">MISSIONS COMPLETE</span>
+                <span id="game-over-missions" class="stat-val">0</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">END BONUS</span>
+                <span id="game-over-bonus" class="stat-val">0</span>
+              </div>
+            </div>
+
+            <!-- High Score Name Entry -->
+            <div id="high-score-entry-section" style="display: none;">
+              <div class="hs-prompt">★ NEW HIGH SCORE! ENTER INITIALS ★</div>
+              <div class="hs-input-row">
+                <input id="initials-input" type="text" maxlength="3" placeholder="AAA" />
+                <button id="high-score-submit-btn" class="modal-btn" style="flex: 0 0 auto;">SAVE</button>
+              </div>
+            </div>
+
+            <!-- Hall of Fame Leaderboard -->
+            <div>
+              <table class="modal-leaderboard">
+                <thead>
+                  <tr>
+                    <th style="text-align: left;">RANK</th>
+                    <th style="text-align: left;">NAME</th>
+                    <th style="text-align: right;">SCORE</th>
+                    <th style="text-align: right;">TITLE</th>
+                  </tr>
+                </thead>
+                <tbody id="hall-of-fame-rows"></tbody>
+              </table>
+            </div>
+
+            <div class="modal-actions">
+              <button id="game-over-restart-btn" class="modal-btn">PLAY AGAIN</button>
+              <button id="game-over-attract-btn" class="modal-btn secondary">TITLE</button>
             </div>
           </div>
         </div>

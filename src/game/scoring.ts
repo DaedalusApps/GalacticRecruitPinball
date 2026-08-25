@@ -19,6 +19,7 @@ export interface EndOfBallBonusParams {
 export class ScoreManager {
   private score: number = 0;
   private multiplierIndex: number = 0;
+  private lastBonus: number = 0;
 
   public onScoreChange?: (totalScore: number, delta: number) => void;
   public onMultiplierChange?: (multiplier: number) => void;
@@ -27,6 +28,10 @@ export class ScoreManager {
   constructor(initialScore: number = 0) {
     this.score = initialScore;
     this.multiplierIndex = 0;
+  }
+
+  public getLastBonus(): number {
+    return this.lastBonus;
   }
 
   /**
@@ -149,6 +154,7 @@ export class ScoreManager {
    */
   public awardEndOfBallBonus(params: EndOfBallBonusParams): number {
     const bonus = this.calculateBonus(params);
+    this.lastBonus = bonus;
     if (bonus > 0) {
       this.score += bonus;
       if (this.onScoreChange) {

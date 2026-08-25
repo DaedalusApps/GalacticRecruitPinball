@@ -107,15 +107,15 @@
 
 | ID | Task | Red-first Artifact | Done When | Status |
 | :--- | :--- | :--- | :--- | :---: |
-| P5.1 | Procedural SFX (all events) | Silent → sounds on every interaction | All 18+ sound events play correctly | 🔴 |
-| P5.2 | Background chiptune music | Silent → 8-bit loop plays | Space Invaders–style music loops seamlessly | 🔴 |
-| P5.3 | HUD overlay | No HUD → score, ball, rank, LCD visible | All HUD elements render and update | 🔴 |
-| P5.4 | High score system | No persistence → localStorage top 5 | Scores persist across sessions | 🔴 |
-| P5.5 | Game Over + high score entry | Game just stops → proper end screen | Name entry, hall of fame display | 🔴 |
-| P5.6 | Easter eggs / cheats | No cheats → all codes functional | `invasion`, `maxwaves`, `tractor`, `promote` + debug keys | 🔴 |
-| P5.7 | Camera toggle | Fixed only → toggleable fixed/follow | `C` key or icon switches modes, both work correctly | 🔴 |
+| P5.1 | Procedural SFX (all events) | Silent → sounds on every interaction | All 18+ sound events play correctly | 🟢 |
+| P5.2 | Background chiptune music | Silent → 8-bit loop plays | Space Invaders–style music loops seamlessly | 🟢 |
+| P5.3 | HUD overlay | No HUD → score, ball, rank, LCD visible | All HUD elements render and update | 🟢 |
+| P5.4 | High score system | No persistence → localStorage top 5 | Scores persist across sessions | 🟢 |
+| P5.5 | Game Over + high score entry | Game just stops → proper end screen | Name entry, hall of fame display | 🟢 |
+| P5.6 | Easter eggs / cheats | No cheats → all codes functional | `invasion`, `maxwaves`, `tractor`, `promote` + debug keys | 🟢 |
+| P5.7 | Camera toggle | Fixed only → toggleable fixed/follow | `C` key or icon switches modes, both work correctly | 🟢 |
 
-**Milestone**: Complete game with audio + UI on desktop ✅/❌
+**Milestone**: Complete game with audio + UI on desktop ✅
 
 ---
 
