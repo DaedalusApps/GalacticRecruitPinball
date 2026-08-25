@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { TABLE, COLORS } from '../utils/constants';
+import { TABLE_LAYOUT } from '../table/layout';
 import {
   createPlayfieldMaterial,
   createCabinetMaterial,
@@ -137,6 +138,20 @@ export class TableScene {
     const neonRightRail = new THREE.Mesh(neonRailGeom, neonMat);
     neonRightRail.position.set(halfW - 0.1, 0, 0.05);
     group.add(neonRightRail);
+
+    // 7. Re-entry Lane Dividers (upper right area)
+    for (let i = 0; i < TABLE_LAYOUT.LANE_DIVIDERS.length; i++) {
+      const d = TABLE_LAYOUT.LANE_DIVIDERS[i];
+      addBox(d.width, d.length, d.height, d.position.x, d.position.y, d.position.z, cabinetMat, `lane-divider-${i}`);
+      addBox(d.width * 0.5, d.length, 0.1, d.position.x, d.position.y, d.position.z + d.height / 2 + 0.05, trimMat, `lane-divider-trim-${i}`);
+    }
+
+    // 8. Inlane / Outlane Guides
+    for (let i = 0; i < TABLE_LAYOUT.INLANE_OUTLANE_GUIDES.length; i++) {
+      const g = TABLE_LAYOUT.INLANE_OUTLANE_GUIDES[i];
+      addBox(g.width, g.length, g.height, g.position.x, g.position.y, g.position.z, cabinetMat, `inlane-guide-${i}`);
+      addBox(g.width * 0.5, g.length, 0.1, g.position.x, g.position.y, g.position.z + g.height / 2 + 0.05, trimMat, `inlane-guide-trim-${i}`);
+    }
 
     return group;
   }

@@ -6,6 +6,8 @@ import { Pinball } from './physics/ball';
 import { Flipper } from './physics/flipper';
 import { Plunger } from './physics/plunger';
 import { KeyboardManager } from './input/keyboard';
+import { TABLE_LAYOUT } from './table/layout';
+import { Slingshot, AttackBumper, ReentryLaneSystem } from './table/elements';
 
 export class GameApp {
   public tableScene: TableScene;
@@ -18,6 +20,10 @@ export class GameApp {
   public leftFlipper: Flipper;
   public rightFlipper: Flipper;
   public plunger: Plunger;
+  public leftSlingshot: Slingshot;
+  public rightSlingshot: Slingshot;
+  public bumpers: AttackBumper[] = [];
+  public reentrySystem: ReentryLaneSystem;
   public keyboard: KeyboardManager;
   public isRunning: boolean = false;
   private animFrameId: number | null = null;
@@ -71,7 +77,46 @@ export class GameApp {
     this.physicsWorld.addBody(this.plunger.body);
     this.scene.add(this.plunger.mesh);
 
-    // 4. Initialize Keyboard Controls
+    // 4. Initialize Slingshots (Left & Right)
+    this.leftSlingshot = new Slingshot({
+      side: 'left',
+      material: this.physicsWorld.wallMaterial,
+    });
+    this.physicsWorld.addSlingshot(this.leftSlingshot);
+    this.scene.add(this.leftSlingshot.mesh);
+
+    this.rightSlingshot = new Slingshot({
+      side: 'right',
+      material: this.physicsWorld.wallMaterial,
+    });
+    this.physicsWorld.addSlingshot(this.rightSlingshot);
+    this.scene.add(this.rightSlingshot.mesh);
+
+    // 5. Initialize 3 Attack Bumpers
+    this.bumpers = TABLE_LAYOUT.BUMPERS.map(
+      (cfg, idx) =>
+        new AttackBumper({
+          id: `bumper-${idx + 1}`,
+          position: cfg.position,
+          radius: cfg.radius,
+          material: this.physicsWorld.wallMaterial,
+        })
+    );
+    for (const bumper of this.bumpers) {
+      this.physicsWorld.addBumper(bumper);
+      this.scene.add(bumper.mesh);
+    }
+
+    // 6. Initialize Re-entry Rollover Lanes System
+    this.reentrySystem = new ReentryLaneSystem({
+      bumpers: this.bumpers,
+      laneConfigs: TABLE_LAYOUT.REENTRY_LANES,
+    });
+    for (const lane of this.reentrySystem.lanes) {
+      this.scene.add(lane.mesh);
+    }
+
+    // 7. Initialize Keyboard Controls
     this.keyboard = new KeyboardManager();
     this.setupKeyboardControls();
 
@@ -80,14 +125,20 @@ export class GameApp {
   }
 
   private setupKeyboardControls(): void {
-    // Flipper controls
+    // Flipper controls (also cycles lit re-entry lanes)
     this.keyboard.onFlipperLeft(
-      () => this.leftFlipper.activate(),
+      () => {
+        this.leftFlipper.activate();
+        this.reentrySystem.cycleLeft();
+      },
       () => this.leftFlipper.deactivate()
     );
 
     this.keyboard.onFlipperRight(
-      () => this.rightFlipper.activate(),
+      () => {
+        this.rightFlipper.activate();
+        this.reentrySystem.cycleRight();
+      },
       () => this.rightFlipper.deactivate()
     );
 
@@ -138,6 +189,12 @@ export class GameApp {
     this.leftFlipper.update(deltaSec);
     this.rightFlipper.update(deltaSec);
     this.plunger.update(deltaSec, this.pinball);
+    this.leftSlingshot.update(deltaSec);
+    this.rightSlingshot.update(deltaSec);
+    for (const bumper of this.bumpers) {
+      bumper.update(deltaSec);
+    }
+    this.reentrySystem.update(deltaSec, this.pinball);
     this.physicsWorld.step(deltaSec);
     this.pinball.sync();
   }

@@ -2,6 +2,7 @@ import * as CANNON from 'cannon-es';
 import { TABLE, PHYSICS, BALL, FLIPPER } from '../utils/constants';
 import { Pinball } from './ball';
 import { Flipper } from './flipper';
+import { Slingshot, AttackBumper } from '../table/elements';
 
 /**
  * PhysicsWorld wraps the Cannon-es 3D physics engine with inclined gravity,
@@ -17,6 +18,8 @@ export class PhysicsWorld {
   public wallBodies: CANNON.Body[] = [];
   public pinballs: Pinball[] = [];
   public flippers: Flipper[] = [];
+  public slingshots: Slingshot[] = [];
+  public bumpers: AttackBumper[] = [];
 
   constructor() {
     // 1. Initialize Cannon-es World
@@ -185,6 +188,66 @@ export class PhysicsWorld {
     if (idx !== -1) {
       this.flippers.splice(idx, 1);
       this.world.removeBody(flipper.body);
+    }
+  }
+
+  /**
+   * Adds a Slingshot to the physics simulation world and registers contact listeners.
+   */
+  public addSlingshot(slingshot: Slingshot): void {
+    if (!this.slingshots.includes(slingshot)) {
+      this.slingshots.push(slingshot);
+      this.world.addBody(slingshot.body);
+
+      slingshot.body.addEventListener('collide', (e: { body: CANNON.Body }) => {
+        for (const pinball of this.pinballs) {
+          if (pinball.body === e.body) {
+            slingshot.handleBallContact(pinball);
+            break;
+          }
+        }
+      });
+    }
+  }
+
+  /**
+   * Removes a Slingshot from the physics simulation world.
+   */
+  public removeSlingshot(slingshot: Slingshot): void {
+    const idx = this.slingshots.indexOf(slingshot);
+    if (idx !== -1) {
+      this.slingshots.splice(idx, 1);
+      this.world.removeBody(slingshot.body);
+    }
+  }
+
+  /**
+   * Adds an AttackBumper to the physics simulation world and registers contact listeners.
+   */
+  public addBumper(bumper: AttackBumper): void {
+    if (!this.bumpers.includes(bumper)) {
+      this.bumpers.push(bumper);
+      this.world.addBody(bumper.body);
+
+      bumper.body.addEventListener('collide', (e: { body: CANNON.Body }) => {
+        for (const pinball of this.pinballs) {
+          if (pinball.body === e.body) {
+            bumper.handleBallContact(pinball);
+            break;
+          }
+        }
+      });
+    }
+  }
+
+  /**
+   * Removes an AttackBumper from the physics simulation world.
+   */
+  public removeBumper(bumper: AttackBumper): void {
+    const idx = this.bumpers.indexOf(bumper);
+    if (idx !== -1) {
+      this.bumpers.splice(idx, 1);
+      this.world.removeBody(bumper.body);
     }
   }
 
