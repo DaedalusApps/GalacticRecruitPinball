@@ -3,6 +3,8 @@ import * as CANNON from 'cannon-es';
 import { TableScene } from './rendering/scene';
 import { PhysicsWorld } from './physics/world';
 import { Pinball } from './physics/ball';
+import { Flipper } from './physics/flipper';
+import { CONTROLS } from './utils/constants';
 
 export class GameApp {
   public tableScene: TableScene;
@@ -12,6 +14,8 @@ export class GameApp {
   public physicsWorld: PhysicsWorld;
   public world: CANNON.World;
   public pinball: Pinball;
+  public leftFlipper: Flipper;
+  public rightFlipper: Flipper;
   public isRunning: boolean = false;
   private animFrameId: number | null = null;
   private lastTime: number = 0;
@@ -36,7 +40,7 @@ export class GameApp {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.2;
 
-    // 3. Initialize Physics World & Pinball
+    // 3. Initialize Physics World, Pinball & Flippers
     this.physicsWorld = new PhysicsWorld();
     this.world = this.physicsWorld.world;
 
@@ -44,9 +48,43 @@ export class GameApp {
     this.physicsWorld.addPinball(this.pinball);
     this.scene.add(this.pinball.mesh);
 
-    // Handle Window Resizing
+    this.leftFlipper = new Flipper({
+      side: 'left',
+      material: this.physicsWorld.flipperMaterial,
+    });
+    this.physicsWorld.addFlipper(this.leftFlipper);
+    this.scene.add(this.leftFlipper.mesh);
+
+    this.rightFlipper = new Flipper({
+      side: 'right',
+      material: this.physicsWorld.flipperMaterial,
+    });
+    this.physicsWorld.addFlipper(this.rightFlipper);
+    this.scene.add(this.rightFlipper.mesh);
+
+    // Handle Controls & Window Resizing
     window.addEventListener('resize', this.onResize);
+    window.addEventListener('keydown', this.onKeyDown);
+    window.addEventListener('keyup', this.onKeyUp);
   }
+
+  public onKeyDown = (e: KeyboardEvent): void => {
+    if (CONTROLS.LEFT_FLIPPER.includes(e.code as any)) {
+      this.leftFlipper.activate();
+    }
+    if (CONTROLS.RIGHT_FLIPPER.includes(e.code as any)) {
+      this.rightFlipper.activate();
+    }
+  };
+
+  public onKeyUp = (e: KeyboardEvent): void => {
+    if (CONTROLS.LEFT_FLIPPER.includes(e.code as any)) {
+      this.leftFlipper.deactivate();
+    }
+    if (CONTROLS.RIGHT_FLIPPER.includes(e.code as any)) {
+      this.rightFlipper.deactivate();
+    }
+  };
 
   public onResize = (): void => {
     const canvas = this.renderer.domElement;
@@ -72,6 +110,8 @@ export class GameApp {
   }
 
   public stepPhysics(deltaSec: number): void {
+    this.leftFlipper.update(deltaSec);
+    this.rightFlipper.update(deltaSec);
     this.physicsWorld.step(deltaSec);
     this.pinball.sync();
   }
@@ -91,6 +131,8 @@ export class GameApp {
   public destroy(): void {
     this.stop();
     window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('keydown', this.onKeyDown);
+    window.removeEventListener('keyup', this.onKeyUp);
     this.renderer.dispose();
   }
 }

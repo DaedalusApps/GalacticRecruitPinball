@@ -1,6 +1,7 @@
 import * as CANNON from 'cannon-es';
-import { TABLE, PHYSICS, BALL } from '../utils/constants';
+import { TABLE, PHYSICS, BALL, FLIPPER } from '../utils/constants';
 import { Pinball } from './ball';
+import { Flipper } from './flipper';
 
 /**
  * PhysicsWorld wraps the Cannon-es 3D physics engine with inclined gravity,
@@ -11,9 +12,11 @@ export class PhysicsWorld {
   public ballMaterial: CANNON.Material;
   public wallMaterial: CANNON.Material;
   public tableMaterial: CANNON.Material;
+  public flipperMaterial: CANNON.Material;
   public playfieldBody: CANNON.Body;
   public wallBodies: CANNON.Body[] = [];
   public pinballs: Pinball[] = [];
+  public flippers: Flipper[] = [];
 
   constructor() {
     // 1. Initialize Cannon-es World
@@ -29,6 +32,7 @@ export class PhysicsWorld {
     this.ballMaterial = new CANNON.Material('ball');
     this.wallMaterial = new CANNON.Material('wall');
     this.tableMaterial = new CANNON.Material('table');
+    this.flipperMaterial = new CANNON.Material('flipper');
 
     // 4. Contact Materials
     const ballWallContact = new CANNON.ContactMaterial(
@@ -40,6 +44,16 @@ export class PhysicsWorld {
       }
     );
     this.world.addContactMaterial(ballWallContact);
+
+    const ballFlipperContact = new CANNON.ContactMaterial(
+      this.ballMaterial,
+      this.flipperMaterial,
+      {
+        friction: 0.05,
+        restitution: FLIPPER.RESTITUTION,
+      }
+    );
+    this.world.addContactMaterial(ballFlipperContact);
 
     const ballTableContact = new CANNON.ContactMaterial(
       this.ballMaterial,
@@ -150,6 +164,27 @@ export class PhysicsWorld {
     if (idx !== -1) {
       this.pinballs.splice(idx, 1);
       this.world.removeBody(pinball.body);
+    }
+  }
+
+  /**
+   * Adds a Flipper to the physics simulation world.
+   */
+  public addFlipper(flipper: Flipper): void {
+    if (!this.flippers.includes(flipper)) {
+      this.flippers.push(flipper);
+      this.world.addBody(flipper.body);
+    }
+  }
+
+  /**
+   * Removes a Flipper from the physics simulation world.
+   */
+  public removeFlipper(flipper: Flipper): void {
+    const idx = this.flippers.indexOf(flipper);
+    if (idx !== -1) {
+      this.flippers.splice(idx, 1);
+      this.world.removeBody(flipper.body);
     }
   }
 
