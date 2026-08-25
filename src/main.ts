@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { COLORS, PHYSICS, TABLE } from './utils/constants';
+import { PHYSICS, TABLE } from './utils/constants';
+import { TableScene } from './rendering/scene';
 
 export class GameApp {
+  public tableScene: TableScene;
   public scene: THREE.Scene;
   public camera: THREE.PerspectiveCamera;
   public renderer: THREE.WebGLRenderer;
@@ -12,17 +14,13 @@ export class GameApp {
   private lastTime: number = 0;
 
   constructor(canvas: HTMLCanvasElement) {
-    // 1. Initialize Three.js Scene
-    this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(COLORS.BG_DARK);
-
-    // 2. Initialize Camera (Perspective, pinball table angle)
+    // 1. Initialize Table Scene (Three.js Scene, Pinball Camera, Lights, Playfield, Cabinet)
     const aspect = canvas.clientWidth / canvas.clientHeight || 1;
-    this.camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 1000);
-    this.camera.position.set(0, -32, 28);
-    this.camera.lookAt(0, 0, 0);
+    this.tableScene = new TableScene(aspect);
+    this.scene = this.tableScene.scene;
+    this.camera = this.tableScene.camera;
 
-    // 3. Initialize WebGL Renderer
+    // 2. Initialize WebGL Renderer
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
@@ -30,16 +28,12 @@ export class GameApp {
     });
     this.renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.2;
 
-    // 4. Initialize Lighting
-    const ambientLight = new THREE.AmbientLight(0x223344, 1.5);
-    this.scene.add(ambientLight);
-
-    const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
-    dirLight.position.set(5, -10, 20);
-    this.scene.add(dirLight);
-
-    // 5. Initialize Cannon-es Physics World
+    // 3. Initialize Cannon-es Physics World
     this.world = new CANNON.World();
     // Gravity pulls downwards along tilted Y-axis and into table Z-axis
     const gx = 0;
@@ -59,8 +53,7 @@ export class GameApp {
     const canvas = this.renderer.domElement;
     const width = canvas.clientWidth || window.innerWidth;
     const height = canvas.clientHeight || window.innerHeight;
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
+    this.tableScene.onResize(width, height);
     this.renderer.setSize(width, height, false);
   };
 
@@ -90,6 +83,7 @@ export class GameApp {
     this.lastTime = now;
 
     this.stepPhysics(deltaSec);
+    this.tableScene.update(deltaSec);
     this.renderer.render(this.scene, this.camera);
 
     this.animFrameId = requestAnimationFrame(this.animate);
