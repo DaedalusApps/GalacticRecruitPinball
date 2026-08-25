@@ -143,6 +143,18 @@ export interface SkillShotLayoutConfig {
   sweetSpotIndex: number;
 }
 
+export interface TractorBeamLayoutConfig {
+  id: string;
+  position: Position3D;
+  attractionRadius: number;
+  captureRadius: number;
+  pullForce: number;
+  holdDuration: number;
+  ejectSpeed: number;
+  score: number;
+  color: number;
+}
+
 /**
  * Complete layout specifications for table elements in Galactic Recruit Pinball.
  * Coordinates are in world units on the table playfield:
@@ -419,5 +431,18 @@ export const TABLE_LAYOUT = {
       { index: 5, position: { x: 8.8, y: 14.0, z: 0.08 }, score: 5000, color: COLORS.NEON_PINK },
     ] as SkillShotLightConfig[],
   } as SkillShotLayoutConfig,
+
+  // 16. Mothership Tractor Beam (Center Gravity Well)
+  MOTHERSHIP_TRACTOR_BEAM: {
+    id: 'mothership-tractor-beam',
+    position: { x: 0, y: 2.0, z: 0.5 } as Position3D,
+    attractionRadius: 6.0,
+    captureRadius: 0.8,
+    pullForce: 25.0,
+    holdDuration: 1.2,
+    ejectSpeed: 20.0,
+    score: 50000,
+    color: COLORS.NEON_CYAN,
+  } as TractorBeamLayoutConfig,
 } as const;
 

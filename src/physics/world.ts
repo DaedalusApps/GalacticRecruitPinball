@@ -16,6 +16,7 @@ import {
   CenterPost,
   SkillShotLane,
 } from '../table/elements';
+import { MothershipTractorBeam } from '../game/tractor-beam';
 
 /**
  * PhysicsWorld wraps the Cannon-es 3D physics engine with inclined gravity,
@@ -37,6 +38,7 @@ export class PhysicsWorld {
   public dropTargetBanks: DropTargetBank[] = [];
   public spotTargetBanks: SpotTargetBank[] = [];
   public ufoBeams: UfoBeamSinkHole[] = [];
+  public tractorBeams: MothershipTractorBeam[] = [];
   public spinners: AlienSpinner[] = [];
   public spaceWarps: SpaceWarpRollover[] = [];
   public kickbacks: ShieldKickback[] = [];
@@ -365,6 +367,22 @@ export class PhysicsWorld {
     const idx = this.ufoBeams.indexOf(beam);
     if (idx !== -1) {
       this.ufoBeams.splice(idx, 1);
+    }
+  }
+
+  /**
+   * Adds a MothershipTractorBeam to the physics world.
+   */
+  public addTractorBeam(beam: MothershipTractorBeam): void {
+    if (!this.tractorBeams.includes(beam)) {
+      this.tractorBeams.push(beam);
+    }
+  }
+
+  public removeTractorBeam(beam: MothershipTractorBeam): void {
+    const idx = this.tractorBeams.indexOf(beam);
+    if (idx !== -1) {
+      this.tractorBeams.splice(idx, 1);
     }
   }
 
