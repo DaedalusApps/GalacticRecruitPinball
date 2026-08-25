@@ -42,11 +42,11 @@
 | P1.8 | 3 UFO Beams (wormholes) | Ball passes over → captured + ejected | Ball captured, teleported, ejected from another hole | 🟢 |
 | P1.9 | Alien Disc spinners | No spinners → spin on ball contact | Spinner rotates, increments counter, awards pts | 🟢 |
 | P1.10 | Space Warp rollover | No detection → registers hit | Rollover triggers and scores | 🟢 |
-| P1.11 | Outlanes + drain + kickback | Ball drains silently → drain detected, kickback fires | Left outlane kickback works when armed | 🔴 |
-| P1.12 | Center post (barrier drone) | No post → post pops up, blocks drain | Post deploys, absorbs one center drain, lowers | 🔴 |
-| P1.13 | Skill Shot lane | No detection → rollover lights register | 6 skill shot positions score correctly | 🔴 |
+| P1.11 | Outlanes + drain + kickback | Ball drains silently → drain detected, kickback fires | Left outlane kickback works when armed | 🟢 |
+| P1.12 | Center post (barrier drone) | No post → post pops up, blocks drain | Post deploys, absorbs one center drain, lowers | 🟢 |
+| P1.13 | Skill Shot lane | No detection → rollover lights register | 6 skill shot positions score correctly | 🟢 |
 
-**Milestone**: Complete playable table with all physical interactions ✅/❌
+**Milestone**: Complete playable table with all physical interactions ✅
 
 ---
 

@@ -98,6 +98,51 @@ export interface SpaceWarpLayoutConfig {
   score: number;
 }
 
+export interface KickbackLayoutConfig {
+  id: string;
+  position: Position3D;
+  kickDirection: { x: number; y: number };
+  kickSpeed: number;
+  score: number;
+  color: number;
+  width: number;
+  length: number;
+}
+
+export interface DrainLayoutConfig {
+  id: string;
+  position: Position3D;
+  drainY: number;
+  width: number;
+  length: number;
+  color: number;
+}
+
+export interface CenterPostLayoutConfig {
+  id: string;
+  position: Position3D;
+  deployedZ: number;
+  retractedZ: number;
+  radius: number;
+  height: number;
+  color: number;
+  score: number;
+}
+
+export interface SkillShotLightConfig {
+  index: number;
+  position: Position3D;
+  score: number;
+  color: number;
+}
+
+export interface SkillShotLayoutConfig {
+  id: string;
+  laneX: number;
+  lights: SkillShotLightConfig[];
+  sweetSpotIndex: number;
+}
+
 /**
  * Complete layout specifications for table elements in Galactic Recruit Pinball.
  * Coordinates are in world units on the table playfield:
@@ -325,5 +370,54 @@ export const TABLE_LAYOUT = {
     color: COLORS.NEON_CYAN,
     score: 5000,
   } as SpaceWarpLayoutConfig,
+
+  // 12. Shield Kickback (Left Outlane Kicker + Neon Shield Barrier)
+  KICKBACK: {
+    id: 'left-shield-kickback',
+    position: { x: -7.8, y: -16.5, z: 0.5 } as Position3D,
+    kickDirection: { x: 0.2, y: 0.98 },
+    kickSpeed: 38,
+    score: 5000,
+    color: COLORS.NEON_GREEN,
+    width: 1.2,
+    length: 2.0,
+  } as KickbackLayoutConfig,
+
+  // 13. Drain Sensor (Bottom Drain Zone)
+  DRAIN: {
+    id: 'bottom-drain-sensor',
+    position: { x: 0, y: -20.0, z: 0 } as Position3D,
+    drainY: -19.5,
+    width: 18.0,
+    length: 2.5,
+    color: COLORS.NEON_PINK,
+  } as DrainLayoutConfig,
+
+  // 14. Center Post (Barrier Drone between Flippers)
+  CENTER_POST: {
+    id: 'center-barrier-drone',
+    position: { x: 0, y: -16.8, z: -0.8 } as Position3D,
+    deployedZ: 0.6,
+    retractedZ: -0.8,
+    radius: 0.35,
+    height: 1.2,
+    color: COLORS.NEON_CYAN,
+    score: 2500,
+  } as CenterPostLayoutConfig,
+
+  // 15. Skill Shot Lane (6 Plunger Lane Indicator Lights)
+  SKILL_SHOT: {
+    id: 'skill-shot-lane',
+    laneX: 8.8,
+    sweetSpotIndex: 2,
+    lights: [
+      { index: 0, position: { x: 8.8, y: -16.0, z: 0.08 }, score: 15000, color: COLORS.NEON_CYAN },
+      { index: 1, position: { x: 8.8, y: -10.0, z: 0.08 }, score: 30000, color: COLORS.NEON_GREEN },
+      { index: 2, position: { x: 8.8, y: -4.0, z: 0.08 }, score: 75000, color: COLORS.NEON_YELLOW },
+      { index: 3, position: { x: 8.8, y: 2.0, z: 0.08 }, score: 30000, color: COLORS.NEON_GREEN },
+      { index: 4, position: { x: 8.8, y: 8.0, z: 0.08 }, score: 15000, color: COLORS.NEON_CYAN },
+      { index: 5, position: { x: 8.8, y: 14.0, z: 0.08 }, score: 5000, color: COLORS.NEON_PINK },
+    ] as SkillShotLightConfig[],
+  } as SkillShotLayoutConfig,
 } as const;
 

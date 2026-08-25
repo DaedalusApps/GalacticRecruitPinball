@@ -10,6 +10,11 @@ import {
   UfoBeamLayoutConfig,
   SpinnerLayoutConfig,
   SpaceWarpLayoutConfig,
+  KickbackLayoutConfig,
+  DrainLayoutConfig,
+  CenterPostLayoutConfig,
+  SkillShotLayoutConfig,
+  SkillShotLightConfig,
 } from './layout';
 import { TableLight, LightGroup } from './lights';
 import { Pinball } from '../physics/ball';
@@ -1617,4 +1622,549 @@ export class SpaceWarpRollover {
     this.light.update(deltaSec);
   }
 }
+
+// ============================================================================
+// 11. SHIELD KICKBACK (Left Outlane Kicker + Neon Shield Barrier)
+// ============================================================================
+
+export interface ShieldKickbackOptions {
+  id: string;
+  config?: KickbackLayoutConfig;
+  material?: CANNON.Material;
+  isArmed?: boolean;
+}
+
+export class ShieldKickback {
+  public id: string;
+  public position: Position3D;
+  public kickDirection: { x: number; y: number };
+  public kickSpeed: number;
+  public score: number;
+  public color: number;
+  public width: number;
+  public length: number;
+  public isArmed: boolean = false;
+
+  public mesh: THREE.Group;
+  public kickerMesh: THREE.Mesh;
+  public barrierMesh: THREE.Mesh;
+  public barrierMaterial: THREE.MeshStandardMaterial;
+  public kickerMaterial: THREE.MeshStandardMaterial;
+  public body: CANNON.Body;
+
+  public onKickbackFired?: (kickback: ShieldKickback, pinball: Pinball) => void;
+  public isFiredAnimating: boolean = false;
+  private fireTimer: number = 0;
+
+  constructor(options: ShieldKickbackOptions) {
+    this.id = options.id;
+    const cfg = options.config ?? TABLE_LAYOUT.KICKBACK;
+    this.position = cfg.position;
+    this.kickDirection = cfg.kickDirection;
+    this.kickSpeed = cfg.kickSpeed;
+    this.score = cfg.score;
+    this.color = cfg.color;
+    this.width = cfg.width;
+    this.length = cfg.length;
+    this.isArmed = options.isArmed ?? false;
+
+    this.mesh = new THREE.Group();
+    this.mesh.name = this.id;
+    this.mesh.position.set(this.position.x, this.position.y, this.position.z);
+
+    // 1. Solenoid Kicker Base / Housing (metallic cylinder and plunger pin)
+    const kickerGeom = new THREE.CylinderGeometry(0.3, 0.35, 0.6, 16);
+    kickerGeom.rotateX(Math.PI / 2);
+    this.kickerMaterial = createMetallicTrimMaterial();
+    this.kickerMesh = new THREE.Mesh(kickerGeom, this.kickerMaterial);
+    this.kickerMesh.position.set(0, -0.6, 0.2);
+    this.kickerMesh.castShadow = true;
+    this.mesh.add(this.kickerMesh);
+
+    // 2. Neon Shield Barrier (energy arc / hexagonal force field)
+    const barrierGeom = new THREE.BoxGeometry(this.width, 0.15, 0.7);
+    this.barrierMaterial = new THREE.MeshStandardMaterial({
+      color: this.color,
+      emissive: this.color,
+      emissiveIntensity: this.isArmed ? 1.5 : 0.2,
+      metalness: 0.3,
+      roughness: 0.2,
+      transparent: true,
+      opacity: this.isArmed ? 0.85 : 0.3,
+    });
+    this.barrierMesh = new THREE.Mesh(barrierGeom, this.barrierMaterial);
+    this.barrierMesh.position.set(0, 0, 0.35);
+    this.mesh.add(this.barrierMesh);
+
+    // 3. Cannon Static Body for physical bumper / kicker housing
+    this.body = new CANNON.Body({
+      mass: 0,
+      type: CANNON.Body.STATIC,
+      material: options.material,
+    });
+    this.body.addShape(
+      new CANNON.Box(new CANNON.Vec3(this.width / 2, this.length / 2, 0.4)),
+      new CANNON.Vec3(0, 0, 0)
+    );
+    this.body.position.set(this.position.x, this.position.y, this.position.z);
+    (this.body as unknown as { userData: { name: string; type: string } }).userData = {
+      name: this.id,
+      type: 'shield-kickback',
+    };
+  }
+
+  public arm(): void {
+    this.isArmed = true;
+    this.barrierMaterial.emissiveIntensity = 1.5;
+    this.barrierMaterial.opacity = 0.85;
+  }
+
+  public disarm(): void {
+    this.isArmed = false;
+    this.barrierMaterial.emissiveIntensity = 0.2;
+    this.barrierMaterial.opacity = 0.3;
+  }
+
+  public checkBall(pinball: Pinball): boolean {
+    const px = pinball.body.position.x;
+    const py = pinball.body.position.y;
+
+    const dx = Math.abs(px - this.position.x);
+    const dy = Math.abs(py - this.position.y);
+
+    if (dx <= this.width / 2 + 0.3 && dy <= this.length / 2 + 0.3) {
+      if (this.isArmed) {
+        return this.fireKickback(pinball);
+      }
+    }
+    return false;
+  }
+
+  public fireKickback(pinball: Pinball): boolean {
+    const mag = Math.hypot(this.kickDirection.x, this.kickDirection.y) || 1;
+    const nx = this.kickDirection.x / mag;
+    const ny = this.kickDirection.y / mag;
+    const vx = nx * this.kickSpeed;
+    const vy = ny * this.kickSpeed;
+
+    pinball.body.velocity.set(vx, vy, 0);
+    pinball.applyImpulse({
+      x: vx * BALL.MASS,
+      y: vy * BALL.MASS,
+      z: 0,
+    });
+    pinball.sync();
+
+    this.disarm();
+    this.isFiredAnimating = true;
+    this.fireTimer = 0.2;
+    this.kickerMesh.position.y = -0.3;
+
+    if (this.onKickbackFired) {
+      this.onKickbackFired(this, pinball);
+    }
+    return true;
+  }
+
+  public handleBallContact(pinball: Pinball): boolean {
+    return this.checkBall(pinball);
+  }
+
+  public update(deltaSec: number, pinball?: Pinball): void {
+    if (pinball) {
+      this.checkBall(pinball);
+    }
+
+    if (this.isFiredAnimating) {
+      this.fireTimer -= deltaSec;
+      if (this.fireTimer <= 0) {
+        this.isFiredAnimating = false;
+        this.kickerMesh.position.y = -0.6;
+      }
+    }
+  }
+}
+
+// ============================================================================
+// 12. DRAIN SENSOR (Bottom Playfield Drain Zone & Outlanes Detection)
+// ============================================================================
+
+export interface DrainSensorOptions {
+  id: string;
+  config?: DrainLayoutConfig;
+}
+
+export class DrainSensor {
+  public id: string;
+  public position: Position3D;
+  public drainY: number;
+  public width: number;
+  public length: number;
+  public color: number;
+  public hasDrained: boolean = false;
+
+  public mesh: THREE.Group;
+  public grilleMesh: THREE.Mesh;
+
+  public onBallDrain?: (drain: DrainSensor, pinball: Pinball) => void;
+
+  constructor(options: DrainSensorOptions) {
+    this.id = options.id;
+    const cfg = options.config ?? TABLE_LAYOUT.DRAIN;
+    this.position = cfg.position;
+    this.drainY = cfg.drainY;
+    this.width = cfg.width;
+    this.length = cfg.length;
+    this.color = cfg.color;
+
+    this.mesh = new THREE.Group();
+    this.mesh.name = this.id;
+    this.mesh.position.set(this.position.x, this.position.y, this.position.z);
+
+    // Drain aperture & metallic grille mesh
+    const grilleGeom = new THREE.BoxGeometry(this.width, this.length, 0.1);
+    const grilleMat = new THREE.MeshStandardMaterial({
+      color: 0x111622,
+      metalness: 0.9,
+      roughness: 0.4,
+    });
+    this.grilleMesh = new THREE.Mesh(grilleGeom, grilleMat);
+    this.grilleMesh.position.set(0, 0, -0.05);
+    this.mesh.add(this.grilleMesh);
+
+    // Red/pink neon hazard edge line
+    const hazardMat = createNeonAccentMaterial(this.color);
+    const hazardGeom = new THREE.BoxGeometry(this.width, 0.1, 0.05);
+    const hazardMesh = new THREE.Mesh(hazardGeom, hazardMat);
+    hazardMesh.position.set(0, this.length / 2, 0.02);
+    this.mesh.add(hazardMesh);
+  }
+
+  public checkDrain(pinball: Pinball): boolean {
+    if (this.hasDrained) return false;
+
+    if (pinball.body.position.y <= this.drainY) {
+      this.hasDrained = true;
+      if (this.onBallDrain) {
+        this.onBallDrain(this, pinball);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  public reset(): void {
+    this.hasDrained = false;
+  }
+
+  public update(_deltaSec: number, pinball?: Pinball): void {
+    if (pinball) {
+      this.checkDrain(pinball);
+    }
+  }
+}
+
+// ============================================================================
+// 13. CENTER POST / BARRIER DRONE (Pneumatic Post Between Main Flippers)
+// ============================================================================
+
+export interface CenterPostOptions {
+  id: string;
+  config?: CenterPostLayoutConfig;
+  material?: CANNON.Material;
+}
+
+export class CenterPost {
+  public id: string;
+  public position: Position3D;
+  public deployedZ: number;
+  public retractedZ: number;
+  public radius: number;
+  public height: number;
+  public color: number;
+  public score: number;
+  public isDeployed: boolean = false;
+
+  public mesh: THREE.Group;
+  public postMesh: THREE.Mesh;
+  public droneMesh: THREE.Group;
+  public postMaterial: THREE.MeshStandardMaterial;
+  public droneMaterial!: THREE.MeshStandardMaterial;
+  public body: CANNON.Body;
+
+  public onBallSaved?: (post: CenterPost, pinball: Pinball) => void;
+  public targetZ: number;
+
+  constructor(options: CenterPostOptions) {
+    this.id = options.id;
+    const cfg = options.config ?? TABLE_LAYOUT.CENTER_POST;
+    this.position = cfg.position;
+    this.deployedZ = cfg.deployedZ;
+    this.retractedZ = cfg.retractedZ;
+    this.radius = cfg.radius;
+    this.height = cfg.height;
+    this.color = cfg.color;
+    this.score = cfg.score;
+    this.targetZ = this.retractedZ;
+
+    this.mesh = new THREE.Group();
+    this.mesh.name = this.id;
+
+    // 1. Post pneumatic metallic cylinder
+    const postGeom = new THREE.CylinderGeometry(this.radius, this.radius, this.height, 24);
+    postGeom.rotateX(Math.PI / 2);
+    this.postMaterial = new THREE.MeshStandardMaterial({
+      color: 0x3a4254,
+      metalness: 0.9,
+      roughness: 0.2,
+    });
+    this.postMesh = new THREE.Mesh(postGeom, this.postMaterial);
+    this.postMesh.castShadow = true;
+    this.mesh.add(this.postMesh);
+
+    // 2. Drone cap ornament with glowing neon trim
+    this.droneMesh = this.createDroneMesh();
+    this.droneMesh.position.set(0, 0, this.height / 2);
+    this.mesh.add(this.droneMesh);
+
+    this.mesh.position.set(this.position.x, this.position.y, this.retractedZ);
+
+    // 3. Cannon Static Cylinder Body
+    this.body = new CANNON.Body({
+      mass: 0,
+      type: CANNON.Body.STATIC,
+      material: options.material,
+    });
+    const shape = new CANNON.Cylinder(this.radius, this.radius, this.height, 16);
+    const q = new CANNON.Quaternion();
+    q.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
+    this.body.addShape(shape, new CANNON.Vec3(0, 0, 0), q);
+    this.body.position.set(this.position.x, this.position.y, this.retractedZ);
+    (this.body as unknown as { userData: { name: string; type: string } }).userData = {
+      name: this.id,
+      type: 'center-post',
+    };
+  }
+
+  private createDroneMesh(): THREE.Group {
+    const group = new THREE.Group();
+    this.droneMaterial = new THREE.MeshStandardMaterial({
+      color: this.color,
+      emissive: this.color,
+      emissiveIntensity: 0.3,
+      metalness: 0.6,
+      roughness: 0.2,
+    });
+
+    const domeGeom = new THREE.CylinderGeometry(this.radius * 0.9, this.radius * 1.1, 0.15, 6);
+    domeGeom.rotateX(Math.PI / 2);
+    const domeMesh = new THREE.Mesh(domeGeom, this.droneMaterial);
+    group.add(domeMesh);
+
+    const eyeGeom = new THREE.SphereGeometry(0.08, 8, 8);
+    const eyeMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xffffff,
+      emissiveIntensity: 1.0,
+    });
+    const eyeMesh = new THREE.Mesh(eyeGeom, eyeMat);
+    eyeMesh.position.set(0, 0, 0.1);
+    group.add(eyeMesh);
+
+    return group;
+  }
+
+  public deploy(): void {
+    this.isDeployed = true;
+    this.targetZ = this.deployedZ;
+    this.body.position.z = this.deployedZ;
+    this.mesh.position.z = this.deployedZ;
+    this.droneMaterial.emissiveIntensity = 1.5;
+  }
+
+  public retract(): void {
+    this.isDeployed = false;
+    this.targetZ = this.retractedZ;
+    this.body.position.z = this.retractedZ;
+    this.mesh.position.z = this.retractedZ;
+    this.droneMaterial.emissiveIntensity = 0.3;
+  }
+
+  public handleBallContact(pinball: Pinball): boolean {
+    if (!this.isDeployed) return false;
+
+    let dx = pinball.body.position.x - this.position.x;
+    let dy = pinball.body.position.y - this.position.y;
+    let dist = Math.hypot(dx, dy);
+
+    if (dist < 0.001) {
+      dx = (Math.random() - 0.5) * 0.2;
+      dy = 1;
+      dist = 1;
+    }
+
+    const nx = dx / dist;
+    const ny = Math.abs(dy / dist); // Deflects upward (+Y) away from drain
+    const deflectSpeed = 16;
+
+    pinball.body.velocity.x = nx * deflectSpeed * 0.5;
+    pinball.body.velocity.y = Math.max(12, ny * deflectSpeed);
+    pinball.applyImpulse({
+      x: nx * deflectSpeed * BALL.MASS,
+      y: Math.max(12, ny * deflectSpeed) * BALL.MASS,
+      z: 0,
+    });
+    pinball.sync();
+
+    if (this.onBallSaved) {
+      this.onBallSaved(this, pinball);
+    }
+
+    // Absorbed one save and lowers back under table
+    this.retract();
+    return true;
+  }
+
+  public update(deltaSec: number, pinball?: Pinball): void {
+    if (this.isDeployed && pinball) {
+      const dx = pinball.body.position.x - this.position.x;
+      const dy = pinball.body.position.y - this.position.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist <= this.radius + BALL.RADIUS + 0.1) {
+        this.handleBallContact(pinball);
+      }
+    }
+
+    // Drone spin animation
+    this.droneMesh.rotation.z += deltaSec * 2.0;
+
+    // Smooth position interpolation if animating
+    if (Math.abs(this.mesh.position.z - this.targetZ) > 0.01) {
+      this.mesh.position.z += (this.targetZ - this.mesh.position.z) * Math.min(deltaSec * 15, 1.0);
+    }
+  }
+}
+
+// ============================================================================
+// 14. SKILL SHOT LANE (6 Indicator Lights in Plunger Chute + Launch Evaluation)
+// ============================================================================
+
+export interface SkillShotLaneOptions {
+  id: string;
+  config?: SkillShotLayoutConfig;
+}
+
+export class SkillShotLane {
+  public id: string;
+  public laneX: number;
+  public sweetSpotIndex: number;
+  public lights: TableLight[] = [];
+  public lightConfigs: SkillShotLightConfig[];
+  public lightGroup: LightGroup;
+  public mesh: THREE.Group;
+
+  public isEvaluating: boolean = false;
+  public hasAwarded: boolean = false;
+  public awardedLightIndex: number = -1;
+  public awardedPoints: number = 0;
+
+  public onSkillShotAwarded?: (lightIndex: number, score: number) => void;
+
+  constructor(options: SkillShotLaneOptions) {
+    this.id = options.id;
+    const cfg = options.config ?? TABLE_LAYOUT.SKILL_SHOT;
+    this.laneX = cfg.laneX;
+    this.sweetSpotIndex = cfg.sweetSpotIndex;
+    this.lightConfigs = cfg.lights;
+
+    this.mesh = new THREE.Group();
+    this.mesh.name = this.id;
+
+    for (let i = 0; i < this.lightConfigs.length; i++) {
+      const lCfg = this.lightConfigs[i];
+      const light = new TableLight({
+        id: `${this.id}-light-${i}`,
+        position: lCfg.position,
+        color: lCfg.color,
+        isLit: false,
+      });
+      this.lights.push(light);
+      this.mesh.add(light.mesh);
+    }
+
+    this.lightGroup = new LightGroup(
+      'skill-shot-lights',
+      this.lights
+    );
+  }
+
+  public getPointsForLight(index: number): number {
+    if (index >= 0 && index < this.lightConfigs.length) {
+      return this.lightConfigs[index].score;
+    }
+    return 0;
+  }
+
+  public startLaunch(): void {
+    this.isEvaluating = true;
+    this.hasAwarded = false;
+    this.awardedLightIndex = -1;
+    this.awardedPoints = 0;
+    for (const light of this.lights) {
+      light.turnOff();
+    }
+  }
+
+  public checkBall(pinball: Pinball): boolean {
+    if (!this.isEvaluating) return false;
+
+    const px = pinball.body.position.x;
+    const py = pinball.body.position.y;
+
+    // Check if ball left plunger chute (entered upper playfield x < 7.6 or y > 18.5)
+    if (px < 7.6 || py > 18.5) {
+      this.isEvaluating = false;
+      return false;
+    }
+
+    if (!this.hasAwarded) {
+      // Find matching light based on proximity along Y
+      for (let i = 0; i < this.lightConfigs.length; i++) {
+        const lightY = this.lightConfigs[i].position.y;
+        if (Math.abs(py - lightY) <= 1.8 && Math.abs(px - this.laneX) <= 1.2) {
+          this.awardSkillShot(i);
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  public awardSkillShot(lightIndex: number): void {
+    this.hasAwarded = true;
+    this.awardedLightIndex = lightIndex;
+    this.awardedPoints = this.getPointsForLight(lightIndex);
+
+    if (lightIndex >= 0 && lightIndex < this.lights.length) {
+      this.lights[lightIndex].turnOn();
+      this.lights[lightIndex].setBlinking(true, 0.1);
+    }
+
+    if (this.onSkillShotAwarded) {
+      this.onSkillShotAwarded(lightIndex, this.awardedPoints);
+    }
+  }
+
+  public update(deltaSec: number, pinball?: Pinball): void {
+    if (pinball && this.isEvaluating) {
+      this.checkBall(pinball);
+    }
+
+    for (const light of this.lights) {
+      light.update(deltaSec);
+    }
+  }
+}
+
 

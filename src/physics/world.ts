@@ -11,6 +11,10 @@ import {
   UfoBeamSinkHole,
   AlienSpinner,
   SpaceWarpRollover,
+  ShieldKickback,
+  DrainSensor,
+  CenterPost,
+  SkillShotLane,
 } from '../table/elements';
 
 /**
@@ -35,6 +39,10 @@ export class PhysicsWorld {
   public ufoBeams: UfoBeamSinkHole[] = [];
   public spinners: AlienSpinner[] = [];
   public spaceWarps: SpaceWarpRollover[] = [];
+  public kickbacks: ShieldKickback[] = [];
+  public drainSensors: DrainSensor[] = [];
+  public centerPosts: CenterPost[] = [];
+  public skillShotLanes: SkillShotLane[] = [];
 
   constructor() {
     // 1. Initialize Cannon-es World
@@ -389,6 +397,92 @@ export class PhysicsWorld {
     const idx = this.spaceWarps.indexOf(warp);
     if (idx !== -1) {
       this.spaceWarps.splice(idx, 1);
+    }
+  }
+
+  /**
+   * Adds a ShieldKickback to the physics world.
+   */
+  public addKickback(kickback: ShieldKickback): void {
+    if (!this.kickbacks.includes(kickback)) {
+      this.kickbacks.push(kickback);
+      this.world.addBody(kickback.body);
+
+      kickback.body.addEventListener('collide', (e: { body: CANNON.Body }) => {
+        for (const pinball of this.pinballs) {
+          if (pinball.body === e.body) {
+            kickback.handleBallContact(pinball);
+            break;
+          }
+        }
+      });
+    }
+  }
+
+  public removeKickback(kickback: ShieldKickback): void {
+    const idx = this.kickbacks.indexOf(kickback);
+    if (idx !== -1) {
+      this.kickbacks.splice(idx, 1);
+      this.world.removeBody(kickback.body);
+    }
+  }
+
+  /**
+   * Adds a DrainSensor to the physics world.
+   */
+  public addDrainSensor(drain: DrainSensor): void {
+    if (!this.drainSensors.includes(drain)) {
+      this.drainSensors.push(drain);
+    }
+  }
+
+  public removeDrainSensor(drain: DrainSensor): void {
+    const idx = this.drainSensors.indexOf(drain);
+    if (idx !== -1) {
+      this.drainSensors.splice(idx, 1);
+    }
+  }
+
+  /**
+   * Adds a CenterPost (Barrier Drone) to the physics world.
+   */
+  public addCenterPost(post: CenterPost): void {
+    if (!this.centerPosts.includes(post)) {
+      this.centerPosts.push(post);
+      this.world.addBody(post.body);
+
+      post.body.addEventListener('collide', (e: { body: CANNON.Body }) => {
+        for (const pinball of this.pinballs) {
+          if (pinball.body === e.body) {
+            post.handleBallContact(pinball);
+            break;
+          }
+        }
+      });
+    }
+  }
+
+  public removeCenterPost(post: CenterPost): void {
+    const idx = this.centerPosts.indexOf(post);
+    if (idx !== -1) {
+      this.centerPosts.splice(idx, 1);
+      this.world.removeBody(post.body);
+    }
+  }
+
+  /**
+   * Adds a SkillShotLane to the physics world.
+   */
+  public addSkillShotLane(lane: SkillShotLane): void {
+    if (!this.skillShotLanes.includes(lane)) {
+      this.skillShotLanes.push(lane);
+    }
+  }
+
+  public removeSkillShotLane(lane: SkillShotLane): void {
+    const idx = this.skillShotLanes.indexOf(lane);
+    if (idx !== -1) {
+      this.skillShotLanes.splice(idx, 1);
     }
   }
 

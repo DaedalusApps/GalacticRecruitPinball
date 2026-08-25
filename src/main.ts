@@ -17,6 +17,10 @@ import {
   UfoBeamSinkHole,
   AlienSpinner,
   SpaceWarpRollover,
+  ShieldKickback,
+  DrainSensor,
+  CenterPost,
+  SkillShotLane,
 } from './table/elements';
 
 export class GameApp {
@@ -44,6 +48,10 @@ export class GameApp {
   public leftSpinner: AlienSpinner;
   public rightSpinner: AlienSpinner;
   public spaceWarp: SpaceWarpRollover;
+  public kickback: ShieldKickback;
+  public drainSensor: DrainSensor;
+  public centerPost: CenterPost;
+  public skillShot: SkillShotLane;
   public keyboard: KeyboardManager;
   public isRunning: boolean = false;
   private animFrameId: number | null = null;
@@ -246,7 +254,41 @@ export class GameApp {
     this.physicsWorld.addSpaceWarp(this.spaceWarp);
     this.scene.add(this.spaceWarp.mesh);
 
-    // 13. Initialize Keyboard Controls
+    // 13. Initialize Left Outlane Shield Kickback
+    this.kickback = new ShieldKickback({
+      id: 'left-shield-kickback',
+      config: TABLE_LAYOUT.KICKBACK,
+      material: this.physicsWorld.wallMaterial,
+    });
+    this.physicsWorld.addKickback(this.kickback);
+    this.scene.add(this.kickback.mesh);
+
+    // 14. Initialize Table Bottom Drain Sensor
+    this.drainSensor = new DrainSensor({
+      id: 'bottom-drain-sensor',
+      config: TABLE_LAYOUT.DRAIN,
+    });
+    this.physicsWorld.addDrainSensor(this.drainSensor);
+    this.scene.add(this.drainSensor.mesh);
+
+    // 15. Initialize Center Post (Barrier Drone)
+    this.centerPost = new CenterPost({
+      id: 'center-barrier-drone',
+      config: TABLE_LAYOUT.CENTER_POST,
+      material: this.physicsWorld.wallMaterial,
+    });
+    this.physicsWorld.addCenterPost(this.centerPost);
+    this.scene.add(this.centerPost.mesh);
+
+    // 16. Initialize Skill Shot Lane (Plunger Lane Indicator Lights)
+    this.skillShot = new SkillShotLane({
+      id: 'skill-shot-lane',
+      config: TABLE_LAYOUT.SKILL_SHOT,
+    });
+    this.physicsWorld.addSkillShotLane(this.skillShot);
+    this.scene.add(this.skillShot.mesh);
+
+    // 17. Initialize Keyboard Controls
     this.keyboard = new KeyboardManager();
     this.setupKeyboardControls();
 
@@ -274,7 +316,10 @@ export class GameApp {
 
     // Plunger controls (Space / Enter / ArrowDown)
     this.keyboard.onPlunger(
-      () => this.plunger.startCharge(),
+      () => {
+        this.plunger.startCharge();
+        this.skillShot.startLaunch();
+      },
       () => this.plunger.release(this.pinball)
     );
 
@@ -326,7 +371,7 @@ export class GameApp {
     }
     this.reentrySystem.update(deltaSec, this.pinball);
 
-    // Update new elements
+    // Update table elements
     this.launchRamp.checkEntry(this.pinball);
     this.launchRamp.update(deltaSec, this.pinball);
     this.boosterDropTargets.update(deltaSec);
@@ -342,6 +387,12 @@ export class GameApp {
     this.rightSpinner.update(deltaSec, this.pinball);
     this.spaceWarp.checkRollover(this.pinball);
     this.spaceWarp.update(deltaSec);
+
+    // Update Outlanes, Drain, Center Post & Skill Shot
+    this.kickback.update(deltaSec, this.pinball);
+    this.drainSensor.update(deltaSec, this.pinball);
+    this.centerPost.update(deltaSec, this.pinball);
+    this.skillShot.update(deltaSec, this.pinball);
 
     this.physicsWorld.step(deltaSec);
     this.pinball.sync();
