@@ -54,19 +54,19 @@
 
 | ID | Task | Red-first Artifact | Done When | Status |
 | :--- | :--- | :--- | :--- | :---: |
-| P2.1 | Score tracking + display | Score stays 0 → increments on hits | All elements award correct points | 🔴 |
-| P2.2 | Bumper upgrade system | Bumpers stay blue → upgrade on lane cycles | Blue→Green→Red via Re-entry lane completion | 🔴 |
-| P2.3 | Spinner boost system | Spinners stay 100pt → boost to 1000pt | Booster target clear upgrades spinners | 🔴 |
-| P2.4 | Skill Shot scoring | No skill award → correct pts on launch | 15K/30K/75K/30K/15K/5K by position | 🔴 |
+| P2.1 | Score tracking + display | Score stays 0 → increments on hits | All elements award correct points | 🟢 |
+| P2.2 | Bumper upgrade system | Bumpers stay blue → upgrade on lane cycles | Blue→Green→Red via Re-entry lane completion | 🟢 |
+| P2.3 | Spinner boost system | Spinners stay 100pt → boost to 1000pt | Booster target clear upgrades spinners | 🟢 |
+| P2.4 | Skill Shot scoring | No skill award → correct pts on launch | 15K/30K/75K/30K/15K/5K by position | 🟢 |
 | P2.5 | UFO Beam progressive rewards | No progression → 5-stage unlock | 10K → lights → post → extra ball → tractor beam | 🔴 |
 | P2.6 | Mothership Tractor Beam | No gravity → magnetic capture + eject | Ball attracted, captured, ejected randomly | 🔴 |
-| P2.7 | Field multiplier (1×→10×) | Multiplier stuck at 1× → progresses | 1×→2×→3×→5×→10× via Medal/Re-entry/UFO | 🔴 |
-| P2.8 | End-of-ball bonus | No bonus → calculated + displayed | Formula correct, forfeited on tilt | 🔴 |
-| P2.9 | Ball count + extra ball | Infinite play → 3 balls, extras work | Game ends after 3 balls, extras add 1 | 🔴 |
-| P2.10 | Tilt system | No tilt → 3-strike system | Warn 1 → Warn 2 → TILT (flippers die) | 🔴 |
-| P2.11 | Ball saver | Instant drain counts → 5-10s grace | Early drain returns ball to plunger | 🔴 |
+| P2.7 | Field multiplier (1×→10×) | Multiplier stuck at 1× → progresses | 1×→2×→3×→5×→10× via Medal/Re-entry/UFO | 🟢 |
+| P2.8 | End-of-ball bonus | No bonus → calculated + displayed | Formula correct, forfeited on tilt | 🟢 |
+| P2.9 | Ball count + extra ball | Infinite play → 3 balls, extras work | Game ends after 3 balls, extras add 1 | 🟢 |
+| P2.10 | Tilt system | No tilt → 3-strike system | Warn 1 → Warn 2 → TILT (flippers die) | 🟢 |
+| P2.11 | Ball saver | Instant drain counts → 5-10s grace | Early drain returns ball to plunger | 🟢 |
 
-**Milestone**: Full scoring game with all table element rewards ✅/❌
+**Milestone**: Full scoring game with all table element rewards ✅
 
 ---
 

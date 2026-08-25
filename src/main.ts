@@ -7,6 +7,8 @@ import { Flipper } from './physics/flipper';
 import { Plunger } from './physics/plunger';
 import { KeyboardManager } from './input/keyboard';
 import { TABLE_LAYOUT } from './table/layout';
+import { ScoreManager } from './game/scoring';
+import { GameStateManager } from './game/state';
 import {
   Slingshot,
   AttackBumper,
@@ -53,6 +55,9 @@ export class GameApp {
   public centerPost: CenterPost;
   public skillShot: SkillShotLane;
   public keyboard: KeyboardManager;
+  public scoreManager: ScoreManager;
+  public gameState: GameStateManager;
+
   public isRunning: boolean = false;
   private animFrameId: number | null = null;
   private lastTime: number = 0;
@@ -77,7 +82,12 @@ export class GameApp {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.2;
 
-    // 3. Initialize Physics World, Pinball, Flippers & Plunger
+    // 3. Initialize Score & Game State Managers
+    this.scoreManager = new ScoreManager();
+    this.gameState = new GameStateManager({ initialBalls: 3, ballSaverDuration: 10.0 });
+    this.setupGameStateListeners();
+
+    // 4. Initialize Physics World, Pinball, Flippers & Plunger
     this.physicsWorld = new PhysicsWorld();
     this.world = this.physicsWorld.world;
 
@@ -105,11 +115,16 @@ export class GameApp {
     this.physicsWorld.addBody(this.plunger.body);
     this.scene.add(this.plunger.mesh);
 
-    // 4. Initialize Slingshots (Left & Right)
+    // 5. Initialize Slingshots (Left & Right)
     this.leftSlingshot = new Slingshot({
       side: 'left',
       material: this.physicsWorld.wallMaterial,
     });
+    this.leftSlingshot.onHit = (score) => {
+      if (!this.gameState.isTilted) {
+        this.scoreManager.addPoints(score);
+      }
+    };
     this.physicsWorld.addSlingshot(this.leftSlingshot);
     this.scene.add(this.leftSlingshot.mesh);
 
@@ -117,10 +132,15 @@ export class GameApp {
       side: 'right',
       material: this.physicsWorld.wallMaterial,
     });
+    this.rightSlingshot.onHit = (score) => {
+      if (!this.gameState.isTilted) {
+        this.scoreManager.addPoints(score);
+      }
+    };
     this.physicsWorld.addSlingshot(this.rightSlingshot);
     this.scene.add(this.rightSlingshot.mesh);
 
-    // 5. Initialize 3 Attack Bumpers
+    // 6. Initialize 3 Attack Bumpers
     this.bumpers = TABLE_LAYOUT.BUMPERS.map(
       (cfg, idx) =>
         new AttackBumper({
@@ -131,45 +151,79 @@ export class GameApp {
         })
     );
     for (const bumper of this.bumpers) {
+      bumper.onHit = (_b, score) => {
+        if (!this.gameState.isTilted) {
+          this.scoreManager.addPoints(score);
+        }
+      };
       this.physicsWorld.addBumper(bumper);
       this.scene.add(bumper.mesh);
     }
 
-    // 6. Initialize Re-entry Rollover Lanes System
+    // 7. Initialize Re-entry Rollover Lanes System
     this.reentrySystem = new ReentryLaneSystem({
       bumpers: this.bumpers,
       laneConfigs: TABLE_LAYOUT.REENTRY_LANES,
     });
+    this.reentrySystem.onCycleComplete = () => {
+      this.scoreManager.advanceMultiplier();
+    };
     for (const lane of this.reentrySystem.lanes) {
       this.scene.add(lane.mesh);
     }
 
-    // 7. Initialize Launch Ramp & Wire Habitrail
+    // 8. Initialize Launch Ramp & Wire Habitrail
     this.launchRamp = new LaunchRamp({
       id: 'cannon-launch-ramp',
       config: TABLE_LAYOUT.LAUNCH_RAMP,
       material: this.physicsWorld.wallMaterial,
     });
+    this.launchRamp.onRampComplete = (ramp) => {
+      if (!this.gameState.isTilted) {
+        this.scoreManager.addPoints(ramp.score);
+      }
+    };
     this.physicsWorld.addLaunchRamp(this.launchRamp);
     this.scene.add(this.launchRamp.mesh);
 
-    // 8. Initialize Booster Drop Targets
+    // 9. Initialize Booster Drop Targets
     this.boosterDropTargets = new DropTargetBank({
       id: 'booster-drop-targets',
       configs: TABLE_LAYOUT.DROP_TARGETS.BOOSTER,
       material: this.physicsWorld.wallMaterial,
     });
+    for (const target of this.boosterDropTargets.targets) {
+      target.onHit = (t) => {
+        if (!this.gameState.isTilted) {
+          this.scoreManager.addPoints(t.score);
+        }
+      };
+    }
+    this.boosterDropTargets.onBankCleared = () => {
+      this.leftSpinner.setBoosted(true);
+      this.rightSpinner.setBoosted(true);
+      if (!this.gameState.isTilted) {
+        this.scoreManager.addPoints(50000);
+      }
+    };
     this.physicsWorld.addDropTargetBank(this.boosterDropTargets);
     for (const target of this.boosterDropTargets.targets) {
       this.scene.add(target.mesh);
     }
 
-    // 9. Initialize Spot Target Banks
+    // 10. Initialize Spot Target Banks
     this.missionSpotTargets = new SpotTargetBank({
       id: 'mission-spot-targets',
       configs: TABLE_LAYOUT.SPOT_TARGETS.MISSION,
       material: this.physicsWorld.wallMaterial,
     });
+    for (const target of this.missionSpotTargets.targets) {
+      target.onHit = (_t, score) => {
+        if (!this.gameState.isTilted) {
+          this.scoreManager.addPoints(score);
+        }
+      };
+    }
     this.physicsWorld.addSpotTargetBank(this.missionSpotTargets);
     for (const target of this.missionSpotTargets.targets) {
       this.scene.add(target.mesh);
@@ -180,6 +234,17 @@ export class GameApp {
       configs: TABLE_LAYOUT.SPOT_TARGETS.MEDAL,
       material: this.physicsWorld.wallMaterial,
     });
+    for (const target of this.medalSpotTargets.targets) {
+      target.onHit = (_t, score) => {
+        if (!this.gameState.isTilted) {
+          this.scoreManager.addPoints(score);
+        }
+      };
+    }
+    this.medalSpotTargets.onBankComplete = () => {
+      this.scoreManager.advanceMultiplier();
+      this.medalSpotTargets.resetAll();
+    };
     this.physicsWorld.addSpotTargetBank(this.medalSpotTargets);
     for (const target of this.medalSpotTargets.targets) {
       this.scene.add(target.mesh);
@@ -190,6 +255,13 @@ export class GameApp {
       configs: TABLE_LAYOUT.SPOT_TARGETS.HAZARDS_LEFT,
       material: this.physicsWorld.wallMaterial,
     });
+    for (const target of this.hazardLeftSpotTargets.targets) {
+      target.onHit = (_t, score) => {
+        if (!this.gameState.isTilted) {
+          this.scoreManager.addPoints(score);
+        }
+      };
+    }
     this.physicsWorld.addSpotTargetBank(this.hazardLeftSpotTargets);
     for (const target of this.hazardLeftSpotTargets.targets) {
       this.scene.add(target.mesh);
@@ -200,12 +272,19 @@ export class GameApp {
       configs: TABLE_LAYOUT.SPOT_TARGETS.HAZARDS_RIGHT,
       material: this.physicsWorld.wallMaterial,
     });
+    for (const target of this.hazardRightSpotTargets.targets) {
+      target.onHit = (_t, score) => {
+        if (!this.gameState.isTilted) {
+          this.scoreManager.addPoints(score);
+        }
+      };
+    }
     this.physicsWorld.addSpotTargetBank(this.hazardRightSpotTargets);
     for (const target of this.hazardRightSpotTargets.targets) {
       this.scene.add(target.mesh);
     }
 
-    // 10. Initialize 3 UFO Beams (Yellow, Red, Green)
+    // 11. Initialize 3 UFO Beams (Yellow, Red, Green)
     this.ufoBeams = [
       new UfoBeamSinkHole({
         id: 'ufo-beam-yellow',
@@ -221,15 +300,25 @@ export class GameApp {
       }),
     ];
     for (const beam of this.ufoBeams) {
+      beam.onCapture = (b) => {
+        if (!this.gameState.isTilted) {
+          this.scoreManager.addPoints(b.score);
+        }
+      };
       this.physicsWorld.addUfoBeam(beam);
       this.scene.add(beam.mesh);
     }
 
-    // 11. Initialize Left & Right Alien Spinners
+    // 12. Initialize Left & Right Alien Spinners
     this.leftSpinner = new AlienSpinner({
       id: 'spinner-left',
       config: TABLE_LAYOUT.SPINNERS.LEFT,
     });
+    this.leftSpinner.onSpin = (spinner, newSpins) => {
+      if (!this.gameState.isTilted) {
+        this.scoreManager.addPoints(spinner.getPointValue() * newSpins);
+      }
+    };
     this.physicsWorld.addSpinner(this.leftSpinner);
     this.scene.add(this.leftSpinner.mesh);
 
@@ -237,79 +326,156 @@ export class GameApp {
       id: 'spinner-right',
       config: TABLE_LAYOUT.SPINNERS.RIGHT,
     });
+    this.rightSpinner.onSpin = (spinner, newSpins) => {
+      if (!this.gameState.isTilted) {
+        this.scoreManager.addPoints(spinner.getPointValue() * newSpins);
+      }
+    };
     this.physicsWorld.addSpinner(this.rightSpinner);
     this.scene.add(this.rightSpinner.mesh);
 
-    // Booster Target clear upgrades spinners
-    this.boosterDropTargets.onBankCleared = () => {
-      this.leftSpinner.setBoosted(true);
-      this.rightSpinner.setBoosted(true);
-    };
-
-    // 12. Initialize Space Warp Rollover
+    // 13. Initialize Space Warp Rollover
     this.spaceWarp = new SpaceWarpRollover({
       id: 'space-warp-rollover',
       config: TABLE_LAYOUT.SPACE_WARP,
     });
+    this.spaceWarp.onWarp = (warp) => {
+      if (!this.gameState.isTilted) {
+        this.scoreManager.addPoints(warp.score);
+      }
+    };
     this.physicsWorld.addSpaceWarp(this.spaceWarp);
     this.scene.add(this.spaceWarp.mesh);
 
-    // 13. Initialize Left Outlane Shield Kickback
+    // 14. Initialize Left Outlane Shield Kickback
     this.kickback = new ShieldKickback({
       id: 'left-shield-kickback',
       config: TABLE_LAYOUT.KICKBACK,
       material: this.physicsWorld.wallMaterial,
     });
+    this.kickback.onKickbackFired = (k) => {
+      if (!this.gameState.isTilted) {
+        this.scoreManager.addPoints(k.score);
+      }
+    };
     this.physicsWorld.addKickback(this.kickback);
     this.scene.add(this.kickback.mesh);
 
-    // 14. Initialize Table Bottom Drain Sensor
+    // 15. Initialize Table Bottom Drain Sensor
     this.drainSensor = new DrainSensor({
       id: 'bottom-drain-sensor',
       config: TABLE_LAYOUT.DRAIN,
     });
+    this.drainSensor.onBallDrain = (_drain, pinball) => {
+      // Award end-of-ball bonus if ball was not saved
+      if (!this.gameState.isBallSaverActive) {
+        this.scoreManager.awardEndOfBallBonus({
+          missions: 0,
+          medals: this.medalSpotTargets.getLitCount(),
+          fuel: 0,
+          rank: 1,
+          isTilted: this.gameState.isTilted,
+        });
+      }
+      this.gameState.handleBallDrain(pinball);
+      this.drainSensor.reset();
+      this.updateHUD();
+    };
     this.physicsWorld.addDrainSensor(this.drainSensor);
     this.scene.add(this.drainSensor.mesh);
 
-    // 15. Initialize Center Post (Barrier Drone)
+    // 16. Initialize Center Post (Barrier Drone)
     this.centerPost = new CenterPost({
       id: 'center-barrier-drone',
       config: TABLE_LAYOUT.CENTER_POST,
       material: this.physicsWorld.wallMaterial,
     });
+    this.centerPost.onBallSaved = (post) => {
+      if (!this.gameState.isTilted) {
+        this.scoreManager.addPoints(post.score);
+      }
+    };
     this.physicsWorld.addCenterPost(this.centerPost);
     this.scene.add(this.centerPost.mesh);
 
-    // 16. Initialize Skill Shot Lane (Plunger Lane Indicator Lights)
+    // 17. Initialize Skill Shot Lane (Plunger Lane Indicator Lights)
     this.skillShot = new SkillShotLane({
       id: 'skill-shot-lane',
       config: TABLE_LAYOUT.SKILL_SHOT,
     });
+    this.skillShot.onSkillShotAwarded = (_lightIndex, score) => {
+      if (!this.gameState.isTilted) {
+        this.scoreManager.addPoints(score);
+      }
+    };
     this.physicsWorld.addSkillShotLane(this.skillShot);
     this.scene.add(this.skillShot.mesh);
 
-    // 17. Initialize Keyboard Controls
+    // 18. Initialize Keyboard Controls
     this.keyboard = new KeyboardManager();
     this.setupKeyboardControls();
 
+    // Update Initial HUD display
+    this.updateHUD();
+
     // Handle Window Resizing
     window.addEventListener('resize', this.onResize);
+  }
+
+  private setupGameStateListeners(): void {
+    this.scoreManager.onScoreChange = () => {
+      this.updateHUD();
+    };
+
+    this.scoreManager.onMultiplierChange = () => {
+      this.updateHUD();
+    };
+
+    this.gameState.onTilt = () => {
+      this.leftFlipper.deactivate();
+      this.rightFlipper.deactivate();
+      this.updateHUD();
+    };
+
+    this.gameState.onTiltWarning = () => {
+      this.updateHUD();
+    };
+
+    this.gameState.onBallSaved = () => {
+      this.updateHUD();
+    };
+
+    this.gameState.onGameOver = () => {
+      this.updateHUD();
+    };
+
+    this.gameState.onNextBall = () => {
+      this.updateHUD();
+    };
+
+    this.gameState.onExtraBallAwarded = () => {
+      this.updateHUD();
+    };
   }
 
   private setupKeyboardControls(): void {
     // Flipper controls (also cycles lit re-entry lanes)
     this.keyboard.onFlipperLeft(
       () => {
-        this.leftFlipper.activate();
-        this.reentrySystem.cycleLeft();
+        if (this.gameState.areFlippersEnabled()) {
+          this.leftFlipper.activate();
+          this.reentrySystem.cycleLeft();
+        }
       },
       () => this.leftFlipper.deactivate()
     );
 
     this.keyboard.onFlipperRight(
       () => {
-        this.rightFlipper.activate();
-        this.reentrySystem.cycleRight();
+        if (this.gameState.areFlippersEnabled()) {
+          this.rightFlipper.activate();
+          this.reentrySystem.cycleRight();
+        }
       },
       () => this.rightFlipper.deactivate()
     );
@@ -317,24 +483,70 @@ export class GameApp {
     // Plunger controls (Space / Enter / ArrowDown)
     this.keyboard.onPlunger(
       () => {
-        this.plunger.startCharge();
-        this.skillShot.startLaunch();
+        if (this.gameState.areFlippersEnabled()) {
+          this.plunger.startCharge();
+          this.skillShot.startLaunch();
+        }
       },
-      () => this.plunger.release(this.pinball)
+      () => {
+        if (this.gameState.areFlippersEnabled()) {
+          this.plunger.release(this.pinball);
+          this.gameState.armBallSaver(10.0);
+          this.updateHUD();
+        }
+      }
     );
 
     // Nudge controls
     this.keyboard.onNudgeLeft(() => {
-      this.pinball.applyImpulse({ x: 0.5, y: 0.1, z: 0 });
+      this.gameState.registerNudge('left', 1.0);
+      if (!this.gameState.isTilted) {
+        this.pinball.applyImpulse({ x: 0.5, y: 0.1, z: 0 });
+      }
+      this.updateHUD();
     });
 
     this.keyboard.onNudgeRight(() => {
-      this.pinball.applyImpulse({ x: -0.5, y: 0.1, z: 0 });
+      this.gameState.registerNudge('right', 1.0);
+      if (!this.gameState.isTilted) {
+        this.pinball.applyImpulse({ x: -0.5, y: 0.1, z: 0 });
+      }
+      this.updateHUD();
     });
 
     this.keyboard.onNudgeUp(() => {
-      this.pinball.applyImpulse({ x: 0, y: 0.8, z: 0 });
+      this.gameState.registerNudge('up', 1.0);
+      if (!this.gameState.isTilted) {
+        this.pinball.applyImpulse({ x: 0, y: 0.8, z: 0 });
+      }
+      this.updateHUD();
     });
+  }
+
+  public updateHUD(): void {
+    if (typeof document === 'undefined') return;
+
+    const scoreElem = document.getElementById('score-display');
+    const multElem = document.getElementById('mult-display');
+    const ballElem = document.getElementById('ball-display');
+
+    if (scoreElem) {
+      scoreElem.textContent = this.scoreManager.getScore().toLocaleString('en-US');
+    }
+    if (multElem) {
+      multElem.textContent = `${this.scoreManager.getMultiplier()}X`;
+    }
+    if (ballElem) {
+      if (this.gameState.isGameOver) {
+        ballElem.textContent = 'GAME OVER';
+      } else if (this.gameState.isTilted) {
+        ballElem.textContent = 'TILT';
+      } else if (this.gameState.extraBalls > 0) {
+        ballElem.textContent = `${this.gameState.currentBall} (+${this.gameState.extraBalls} EXTRA)`;
+      } else {
+        ballElem.textContent = `${this.gameState.currentBall}`;
+      }
+    }
   }
 
   public onResize = (): void => {
@@ -361,6 +573,10 @@ export class GameApp {
   }
 
   public stepPhysics(deltaSec: number): void {
+    // 1. Update Game State (ball saver countdown, tilt decay)
+    this.gameState.update(deltaSec);
+
+    // 2. Update Flippers & Plunger
     this.leftFlipper.update(deltaSec);
     this.rightFlipper.update(deltaSec);
     this.plunger.update(deltaSec, this.pinball);
@@ -371,7 +587,7 @@ export class GameApp {
     }
     this.reentrySystem.update(deltaSec, this.pinball);
 
-    // Update table elements
+    // 3. Update table elements
     this.launchRamp.checkEntry(this.pinball);
     this.launchRamp.update(deltaSec, this.pinball);
     this.boosterDropTargets.update(deltaSec);
@@ -388,12 +604,13 @@ export class GameApp {
     this.spaceWarp.checkRollover(this.pinball);
     this.spaceWarp.update(deltaSec);
 
-    // Update Outlanes, Drain, Center Post & Skill Shot
+    // 4. Update Outlanes, Drain, Center Post & Skill Shot
     this.kickback.update(deltaSec, this.pinball);
     this.drainSensor.update(deltaSec, this.pinball);
     this.centerPost.update(deltaSec, this.pinball);
     this.skillShot.update(deltaSec, this.pinball);
 
+    // 5. Cannon World Step & Ball Sync
     this.physicsWorld.step(deltaSec);
     this.pinball.sync();
   }
