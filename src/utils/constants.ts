@@ -83,14 +83,14 @@ export const COLORS = {
 // Keyboard Controls
 export const CONTROLS = {
   LEFT_FLIPPER: ['KeyZ', 'KeyA', 'ShiftLeft'],
-  RIGHT_FLIPPER: ['Slash', 'KeyM', 'ShiftRight', 'Period'],
+  RIGHT_FLIPPER: ['Slash', 'KeyM', 'ShiftRight'],
   UPPER_LEFT_FLIPPER: ['KeyS', 'KeyW'],
   PLUNGER: ['Space', 'Enter', 'ArrowDown'],
-  NUDGE_LEFT: ['KeyX'],
-  NUDGE_RIGHT: ['Period', 'KeyC'],
-  NUDGE_UP: ['ArrowUp', 'Space'],
+  NUDGE_LEFT: ['KeyX', 'ArrowLeft'],
+  NUDGE_RIGHT: ['Period', 'ArrowRight'],
+  NUDGE_UP: ['ArrowUp'],
   CAMERA_TOGGLE: ['KeyC', 'KeyV'],
-  SOUND_TOGGLE: ['KeyM'],
+  SOUND_TOGGLE: ['KeyO'],
   PAUSE: ['KeyP', 'Escape'],
 } as const;
 

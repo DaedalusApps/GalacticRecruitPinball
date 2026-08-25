@@ -21,10 +21,10 @@
 | P0.4 | 2D physics engine (gravity, walls, bounce) | Ball static → ball falls under gravity, bounces off walls | Ball rolls down incline, bounces off all 4 walls | 🟢 |
 | P0.5 | Flipper rendering + arc rotation | Flippers static → rotate on keypress | Z/M keys rotate left/right flippers through arc, return spring | 🟢 |
 | P0.6 | Flipper-ball interaction | Ball passes through flipper → ball deflects | Ball is hit by flipper with correct velocity transfer | 🟢 |
-| P0.7 | Plunger (railgun) + spring launch | Ball sits in lane → plunger launches ball | Space key charges + releases, ball velocity proportional to hold time | 🔴 |
-| P0.8 | Keyboard input system | No input handling → all keys mapped | Z, M, Space, X, ., Up all functional | 🔴 |
+| P0.7 | Plunger (railgun) + spring launch | Ball sits in lane → plunger launches ball | Space key charges + releases, ball velocity proportional to hold time | 🟢 |
+| P0.8 | Keyboard input system | No input handling → all keys mapped | Z, M, Space, X, ., Up all functional | 🟢 |
 
-**Milestone**: Ball launches, bounces off walls, interacts with flippers ✅/❌
+**Milestone**: Ball launches, bounces off walls, interacts with flippers ✅
 
 ---
 

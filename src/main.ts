@@ -4,7 +4,8 @@ import { TableScene } from './rendering/scene';
 import { PhysicsWorld } from './physics/world';
 import { Pinball } from './physics/ball';
 import { Flipper } from './physics/flipper';
-import { CONTROLS } from './utils/constants';
+import { Plunger } from './physics/plunger';
+import { KeyboardManager } from './input/keyboard';
 
 export class GameApp {
   public tableScene: TableScene;
@@ -16,6 +17,8 @@ export class GameApp {
   public pinball: Pinball;
   public leftFlipper: Flipper;
   public rightFlipper: Flipper;
+  public plunger: Plunger;
+  public keyboard: KeyboardManager;
   public isRunning: boolean = false;
   private animFrameId: number | null = null;
   private lastTime: number = 0;
@@ -40,7 +43,7 @@ export class GameApp {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.2;
 
-    // 3. Initialize Physics World, Pinball & Flippers
+    // 3. Initialize Physics World, Pinball, Flippers & Plunger
     this.physicsWorld = new PhysicsWorld();
     this.world = this.physicsWorld.world;
 
@@ -62,29 +65,51 @@ export class GameApp {
     this.physicsWorld.addFlipper(this.rightFlipper);
     this.scene.add(this.rightFlipper.mesh);
 
-    // Handle Controls & Window Resizing
+    this.plunger = new Plunger({
+      material: this.physicsWorld.wallMaterial,
+    });
+    this.physicsWorld.addBody(this.plunger.body);
+    this.scene.add(this.plunger.mesh);
+
+    // 4. Initialize Keyboard Controls
+    this.keyboard = new KeyboardManager();
+    this.setupKeyboardControls();
+
+    // Handle Window Resizing
     window.addEventListener('resize', this.onResize);
-    window.addEventListener('keydown', this.onKeyDown);
-    window.addEventListener('keyup', this.onKeyUp);
   }
 
-  public onKeyDown = (e: KeyboardEvent): void => {
-    if (CONTROLS.LEFT_FLIPPER.includes(e.code as any)) {
-      this.leftFlipper.activate();
-    }
-    if (CONTROLS.RIGHT_FLIPPER.includes(e.code as any)) {
-      this.rightFlipper.activate();
-    }
-  };
+  private setupKeyboardControls(): void {
+    // Flipper controls
+    this.keyboard.onFlipperLeft(
+      () => this.leftFlipper.activate(),
+      () => this.leftFlipper.deactivate()
+    );
 
-  public onKeyUp = (e: KeyboardEvent): void => {
-    if (CONTROLS.LEFT_FLIPPER.includes(e.code as any)) {
-      this.leftFlipper.deactivate();
-    }
-    if (CONTROLS.RIGHT_FLIPPER.includes(e.code as any)) {
-      this.rightFlipper.deactivate();
-    }
-  };
+    this.keyboard.onFlipperRight(
+      () => this.rightFlipper.activate(),
+      () => this.rightFlipper.deactivate()
+    );
+
+    // Plunger controls (Space / Enter / ArrowDown)
+    this.keyboard.onPlunger(
+      () => this.plunger.startCharge(),
+      () => this.plunger.release(this.pinball)
+    );
+
+    // Nudge controls
+    this.keyboard.onNudgeLeft(() => {
+      this.pinball.applyImpulse({ x: 0.5, y: 0.1, z: 0 });
+    });
+
+    this.keyboard.onNudgeRight(() => {
+      this.pinball.applyImpulse({ x: -0.5, y: 0.1, z: 0 });
+    });
+
+    this.keyboard.onNudgeUp(() => {
+      this.pinball.applyImpulse({ x: 0, y: 0.8, z: 0 });
+    });
+  }
 
   public onResize = (): void => {
     const canvas = this.renderer.domElement;
@@ -112,6 +137,7 @@ export class GameApp {
   public stepPhysics(deltaSec: number): void {
     this.leftFlipper.update(deltaSec);
     this.rightFlipper.update(deltaSec);
+    this.plunger.update(deltaSec, this.pinball);
     this.physicsWorld.step(deltaSec);
     this.pinball.sync();
   }
@@ -131,8 +157,7 @@ export class GameApp {
   public destroy(): void {
     this.stop();
     window.removeEventListener('resize', this.onResize);
-    window.removeEventListener('keydown', this.onKeyDown);
-    window.removeEventListener('keyup', this.onKeyUp);
+    this.keyboard.destroy();
     this.renderer.dispose();
   }
 }
