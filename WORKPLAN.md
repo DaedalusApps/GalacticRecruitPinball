@@ -74,15 +74,15 @@
 
 | ID | Task | Red-first Artifact | Done When | Status |
 | :--- | :--- | :--- | :--- | :---: |
-| P3.1 | Rank system (9 ranks) | No ranks → Rookie Defender displayed | All 9 ranks with icons defined | 🔴 |
-| P3.2 | 18 Progress Lights ring | No lights → ring visible + tracks | Lights increment on mission complete, reset on promote | 🔴 |
-| P3.3 | Mission lifecycle (request→accept→execute) | No missions → full lifecycle | Request via targets, accept via ramp, fuel timer runs | 🔴 |
-| P3.4 | All 17 missions | 0 missions → 17 with correct objectives | Each mission's objective + reward matches spec | 🔴 |
-| P3.5 | Fuel timer (Energy Core) | No timer → countdown active | Fuel ticks down, refuelable, failure on empty | 🔴 |
-| P3.6 | Promotion logic | No promotion → rank advances | 18 lights → fanfare → next rank → lights reset | 🔴 |
-| P3.7 | LCD ticker messages | No messages → all states shown | Request, accept, objective, complete, fail, promote msgs | 🔴 |
+| P3.1 | Rank system (9 ranks) | No ranks → Rookie Defender displayed | All 9 ranks with icons defined | 🟢 |
+| P3.2 | 18 Progress Lights ring | No lights → ring visible + tracks | Lights increment on mission complete, reset on promote | 🟢 |
+| P3.3 | Mission lifecycle (request→accept→execute) | No missions → full lifecycle | Request via targets, accept via ramp, fuel timer runs | 🟢 |
+| P3.4 | All 17 missions | 0 missions → 17 with correct objectives | Each mission's objective + reward matches spec | 🟢 |
+| P3.5 | Fuel timer (Energy Core) | No timer → countdown active | Fuel ticks down, refuelable, failure on empty | 🟢 |
+| P3.6 | Promotion logic | No promotion → rank advances | 18 lights → fanfare → next rank → lights reset | 🟢 |
+| P3.7 | LCD ticker messages | No messages → all states shown | Request, accept, objective, complete, fail, promote msgs | 🟢 |
 
-**Milestone**: Full Space Cadet–equivalent progression system ✅/❌
+**Milestone**: Full Space Cadet–equivalent progression system ✅
 
 ---
 

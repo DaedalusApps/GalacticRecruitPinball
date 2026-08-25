@@ -103,6 +103,28 @@
       .hud-info span {
         color: #ffffff;
       }
+
+      .hud-ticker-bar {
+        margin-top: 8px;
+        background: rgba(3, 5, 12, 0.9);
+        border: 1px solid rgba(0, 255, 102, 0.3);
+        border-radius: 4px;
+        padding: 6px 14px;
+        box-shadow: 0 0 8px rgba(0, 255, 102, 0.15);
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+      }
+
+      .hud-ticker-text {
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        font-weight: bold;
+        color: var(--color-neon-green);
+        letter-spacing: 1px;
+        text-shadow: 0 0 6px rgba(0, 255, 102, 0.7);
+        white-space: nowrap;
+      }
     </style>
   </head>
   <body>
@@ -110,15 +132,20 @@
       <div id="game-container">
         <canvas id="pinball-canvas"></canvas>
         <div id="hud-overlay">
-          <header class="hud-header">
-            <div class="hud-title">GALACTIC RECRUIT</div>
-            <div class="hud-info">
-              <div>SCORE: <span id="score-display">000,000</span></div>
-              <div>MULT: <span id="mult-display">1X</span></div>
-              <div>BALL: <span id="ball-display">1</span></div>
-              <div>RANK: <span id="rank-display">ROOKIE DEFENDER</span></div>
+          <div>
+            <header class="hud-header">
+              <div class="hud-title">GALACTIC RECRUIT</div>
+              <div class="hud-info">
+                <div>SCORE: <span id="score-display">000,000</span></div>
+                <div>MULT: <span id="mult-display">1X</span></div>
+                <div>BALL: <span id="ball-display">1</span></div>
+                <div>RANK: <span id="rank-display">ROOKIE DEFENDER</span></div>
+              </div>
+            </header>
+            <div class="hud-ticker-bar">
+              <div id="lcd-ticker" class="hud-ticker-text">GALACTIC RECRUIT DEFENDER READY</div>
             </div>
-          </header>
+          </div>
         </div>
       </div>
     </div>

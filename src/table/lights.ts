@@ -253,3 +253,216 @@ export class LightGroup {
     }
   }
 }
+
+/**
+ * Visual 18 Progress Lights Ring surrounding the central rank insignia (P3.2).
+ */
+export class ProgressLightsRingVisual {
+  public mesh: THREE.Group;
+  public lights: TableLight[] = [];
+  public centerInsigniaMesh: THREE.Mesh;
+  public insigniaMaterial: THREE.MeshStandardMaterial;
+
+  private isCelebrating: boolean = false;
+  private celebrationTimer: number = 0;
+
+  constructor(options?: {
+    center?: { x: number; y: number; z: number };
+    radius?: number;
+    count?: number;
+    color?: number;
+  }) {
+    const center = options?.center ?? { x: 0, y: -4.0, z: 0.08 };
+    const radius = options?.radius ?? 2.6;
+    const count = options?.count ?? 18;
+    const color = options?.color ?? COLORS.NEON_CYAN;
+
+    this.mesh = new THREE.Group();
+    this.mesh.name = 'progress-lights-ring';
+    this.mesh.position.set(center.x, center.y, center.z);
+
+    // 1. Central Rank Insignia Disc
+    const insigniaGeom = new THREE.CylinderGeometry(radius * 0.55, radius * 0.6, 0.06, 32);
+    insigniaGeom.rotateX(Math.PI / 2);
+    this.insigniaMaterial = new THREE.MeshStandardMaterial({
+      color: 0x1a2436,
+      emissive: color,
+      emissiveIntensity: 0.4,
+      metalness: 0.8,
+      roughness: 0.2,
+    });
+    this.centerInsigniaMesh = new THREE.Mesh(insigniaGeom, this.insigniaMaterial);
+    this.centerInsigniaMesh.name = 'center-rank-insignia';
+    this.mesh.add(this.centerInsigniaMesh);
+
+    // Outer decorative chrome trim ring
+    const trimGeom = new THREE.TorusGeometry(radius * 1.08, 0.04, 12, 48);
+    const trimMat = new THREE.MeshStandardMaterial({
+      color: 0x445566,
+      metalness: 0.9,
+      roughness: 0.2,
+    });
+    const trimMesh = new THREE.Mesh(trimGeom, trimMat);
+    this.mesh.add(trimMesh);
+
+    // 2. 18 Radial Indicator Lamps
+    for (let i = 0; i < count; i++) {
+      // Angle starting from top (PI/2) rotating clockwise (-angle)
+      const angle = Math.PI / 2 - (i / count) * Math.PI * 2;
+      const lx = Math.cos(angle) * radius;
+      const ly = Math.sin(angle) * radius;
+
+      const light = new TableLight({
+        id: `progress-light-${i}`,
+        position: { x: lx, y: ly, z: 0 },
+        radius: 0.18,
+        color,
+        offColor: 0x0c1420,
+        isLit: false,
+      });
+
+      this.lights.push(light);
+      this.mesh.add(light.mesh);
+    }
+  }
+
+  public setLitCount(count: number): void {
+    if (this.isCelebrating) return;
+    for (let i = 0; i < this.lights.length; i++) {
+      if (i < count) {
+        this.lights[i].turnOn();
+      } else {
+        this.lights[i].turnOff();
+      }
+    }
+  }
+
+  public setStates(states: boolean[]): void {
+    if (this.isCelebrating) return;
+    for (let i = 0; i < this.lights.length; i++) {
+      if (i < states.length && states[i]) {
+        this.lights[i].turnOn();
+      } else {
+        this.lights[i].turnOff();
+      }
+    }
+  }
+
+  public celebratePromotion(durationSec: number = 2.0): void {
+    this.isCelebrating = true;
+    this.celebrationTimer = durationSec;
+
+    for (const light of this.lights) {
+      light.setColor(COLORS.NEON_YELLOW);
+      light.setBlinking(true, 0.1);
+    }
+    this.insigniaMaterial.emissive.setHex(COLORS.NEON_YELLOW);
+    this.insigniaMaterial.emissiveIntensity = 2.0;
+  }
+
+  public update(deltaSec: number): void {
+    if (this.isCelebrating) {
+      this.celebrationTimer -= deltaSec;
+      if (this.celebrationTimer <= 0) {
+        this.isCelebrating = false;
+        for (const light of this.lights) {
+          light.setColor(COLORS.NEON_CYAN);
+          light.setBlinking(false);
+          light.turnOff();
+        }
+        this.insigniaMaterial.emissive.setHex(COLORS.NEON_CYAN);
+        this.insigniaMaterial.emissiveIntensity = 0.4;
+      }
+    }
+
+    for (const light of this.lights) {
+      light.update(deltaSec);
+    }
+  }
+}
+
+/**
+ * Visual Energy Core Fuel Ladder Indicator Lamps (P3.5).
+ */
+export class EnergyCoreLadderVisual {
+  public mesh: THREE.Group;
+  public lights: TableLight[] = [];
+  public color: number;
+  public lowFuelColor: number;
+
+  constructor(options?: {
+    position?: { x: number; y: number; z: number };
+    count?: number;
+    spacing?: number;
+    color?: number;
+    lowFuelColor?: number;
+  }) {
+    const pos = options?.position ?? { x: -8.2, y: 11.0, z: 0.08 };
+    const count = options?.count ?? 6;
+    const spacing = options?.spacing ?? 1.2;
+    this.color = options?.color ?? COLORS.NEON_GREEN;
+    this.lowFuelColor = options?.lowFuelColor ?? COLORS.NEON_PINK;
+
+    this.mesh = new THREE.Group();
+    this.mesh.name = 'energy-core-ladder';
+    this.mesh.position.set(pos.x, pos.y, pos.z);
+
+    // Frame rail
+    const frameHeight = count * spacing + 0.6;
+    const frameGeom = new THREE.BoxGeometry(0.8, frameHeight, 0.05);
+    const frameMat = new THREE.MeshStandardMaterial({
+      color: 0x151c28,
+      metalness: 0.8,
+      roughness: 0.3,
+    });
+    const frameMesh = new THREE.Mesh(frameGeom, frameMat);
+    frameMesh.position.set(0, -((count - 1) * spacing) / 2, -0.02);
+    this.mesh.add(frameMesh);
+
+    for (let i = 0; i < count; i++) {
+      const ly = -i * spacing;
+      const light = new TableLight({
+        id: `energy-core-lamp-${i}`,
+        position: { x: 0, y: ly, z: 0 },
+        shape: 'rect',
+        width: 0.6,
+        length: 0.35,
+        color: this.color,
+        offColor: 0x0a1018,
+        isLit: true,
+      });
+      this.lights.push(light);
+      this.mesh.add(light.mesh);
+    }
+  }
+
+  public setFuelPercentage(percentage: number, isLow: boolean): void {
+    const clampedPct = Math.max(0, Math.min(percentage, 1.0));
+    const activeCount = Math.ceil(clampedPct * this.lights.length);
+    const activeColor = isLow ? this.lowFuelColor : this.color;
+
+    // Bottom-to-top activation: index 0 is top, count - 1 is bottom
+    // We light from bottom (index count - 1) upwards
+    for (let i = 0; i < this.lights.length; i++) {
+      const lampFromBottom = this.lights.length - 1 - i;
+      const light = this.lights[i];
+      light.setColor(activeColor);
+
+      if (lampFromBottom < activeCount) {
+        if (isLow) {
+          light.setBlinking(true, 0.15);
+        } else {
+          light.turnOn();
+        }
+      } else {
+        light.turnOff();
+      }
+    }
+  }
+
+  public update(deltaSec: number): void {
+    for (const light of this.lights) {
+      light.update(deltaSec);
+    }
+  }
+}
