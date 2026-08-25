@@ -24,6 +24,8 @@ import {
   CenterPost,
   SkillShotLane,
 } from './table/elements';
+import { UfoProgressionSystem } from './game/ufo-progression';
+import { MothershipTractorBeam } from './game/tractor-beam';
 
 export class GameApp {
   public tableScene: TableScene;
@@ -54,6 +56,8 @@ export class GameApp {
   public drainSensor: DrainSensor;
   public centerPost: CenterPost;
   public skillShot: SkillShotLane;
+  public tractorBeam: MothershipTractorBeam;
+  public ufoProgression: UfoProgressionSystem;
   public keyboard: KeyboardManager;
   public scoreManager: ScoreManager;
   public gameState: GameStateManager;
@@ -299,15 +303,6 @@ export class GameApp {
         config: TABLE_LAYOUT.UFO_BEAMS.GREEN,
       }),
     ];
-    for (const beam of this.ufoBeams) {
-      beam.onCapture = (b) => {
-        if (!this.gameState.isTilted) {
-          this.scoreManager.addPoints(b.score);
-        }
-      };
-      this.physicsWorld.addUfoBeam(beam);
-      this.scene.add(beam.mesh);
-    }
 
     // 12. Initialize Left & Right Alien Spinners
     this.leftSpinner = new AlienSpinner({
@@ -398,7 +393,48 @@ export class GameApp {
     this.physicsWorld.addCenterPost(this.centerPost);
     this.scene.add(this.centerPost.mesh);
 
-    // 17. Initialize Skill Shot Lane (Plunger Lane Indicator Lights)
+    // 17. Initialize Mothership Tractor Beam (Gravity Well)
+    this.tractorBeam = new MothershipTractorBeam({
+      id: TABLE_LAYOUT.MOTHERSHIP_TRACTOR_BEAM.id,
+      position: TABLE_LAYOUT.MOTHERSHIP_TRACTOR_BEAM.position,
+      attractionRadius: TABLE_LAYOUT.MOTHERSHIP_TRACTOR_BEAM.attractionRadius,
+      captureRadius: TABLE_LAYOUT.MOTHERSHIP_TRACTOR_BEAM.captureRadius,
+      pullForce: TABLE_LAYOUT.MOTHERSHIP_TRACTOR_BEAM.pullForce,
+      holdDuration: TABLE_LAYOUT.MOTHERSHIP_TRACTOR_BEAM.holdDuration,
+      ejectSpeed: TABLE_LAYOUT.MOTHERSHIP_TRACTOR_BEAM.ejectSpeed,
+      score: TABLE_LAYOUT.MOTHERSHIP_TRACTOR_BEAM.score,
+      color: TABLE_LAYOUT.MOTHERSHIP_TRACTOR_BEAM.color,
+    });
+    this.tractorBeam.onCapture = (_ball, score) => {
+      if (!this.gameState.isTilted) {
+        this.scoreManager.addPoints(score);
+        this.updateHUD();
+      }
+    };
+    this.physicsWorld.addTractorBeam(this.tractorBeam);
+    this.scene.add(this.tractorBeam.mesh);
+
+    // 18. Initialize UFO Beam Progression System (P2.5)
+    this.ufoProgression = new UfoProgressionSystem({
+      scoreManager: this.scoreManager,
+      gameState: this.gameState,
+      centerPost: this.centerPost,
+      tractorBeam: this.tractorBeam,
+    });
+
+    for (const beam of this.ufoBeams) {
+      beam.onCapture = (b) => {
+        if (!this.gameState.isTilted) {
+          this.scoreManager.addPoints(b.score);
+          this.ufoProgression.registerHit();
+          this.updateHUD();
+        }
+      };
+      this.physicsWorld.addUfoBeam(beam);
+      this.scene.add(beam.mesh);
+    }
+
+    // 19. Initialize Skill Shot Lane (Plunger Lane Indicator Lights)
     this.skillShot = new SkillShotLane({
       id: 'skill-shot-lane',
       config: TABLE_LAYOUT.SKILL_SHOT,
@@ -604,11 +640,12 @@ export class GameApp {
     this.spaceWarp.checkRollover(this.pinball);
     this.spaceWarp.update(deltaSec);
 
-    // 4. Update Outlanes, Drain, Center Post & Skill Shot
+    // 4. Update Outlanes, Drain, Center Post, Skill Shot & Tractor Beam
     this.kickback.update(deltaSec, this.pinball);
     this.drainSensor.update(deltaSec, this.pinball);
     this.centerPost.update(deltaSec, this.pinball);
     this.skillShot.update(deltaSec, this.pinball);
+    this.tractorBeam.update(deltaSec, this.pinball);
 
     // 5. Cannon World Step & Ball Sync
     this.physicsWorld.step(deltaSec);
