@@ -15,7 +15,7 @@
 
 | ID | Task | Red-first Artifact | Done When | Status |
 | :--- | :--- | :--- | :--- | :---: |
-| P0.1 | Project scaffolding (Vite + TS + Three.js) | `npm run dev` fails → passes, shows blank page | Vite dev server boots, TS compiles, Three.js imported | 🔴 |
+| P0.1 | Project scaffolding (Vite + TS + Three.js) | `npm run dev` fails → passes, shows blank page | Vite dev server boots, TS compiles, Three.js imported | 🟢 |
 | P0.2 | Basic Three.js scene (camera, lights, table surface) | Empty black canvas → visible lit table plane | Black glossy table renders with correct perspective camera | 🔴 |
 | P0.3 | Ball rendering (chrome sphere) | No ball visible → chrome ball on table | Ball renders with environment reflections | 🔴 |
 | P0.4 | 2D physics engine (gravity, walls, bounce) | Ball static → ball falls under gravity, bounces off walls | Ball rolls down incline, bounces off all 4 walls | 🔴 |
