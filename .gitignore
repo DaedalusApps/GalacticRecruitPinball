@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+dist/
+dist-ssr/
+
+# Build output & caches
+*.tsbuildinfo
+.vite/
+.turbo/
+.cache/
+
+# Sensitive Information, Secrets & Credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+*.pkcs12
+id_rsa*
+id_ed25519*
+*credentials*
+*secret*
+*.token
+auth/
+secrets/
+
+# Decision log & local artifacts (local, per working process)
+prd/
+
+# Logs & Temp files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.tmp
+*.temp
+
+# OS generated files
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.stackdump
+
+# Editor & IDE directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
