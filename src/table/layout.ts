@@ -40,6 +40,64 @@ export interface LaneDividerConfig {
   height: number;
 }
 
+export interface LaunchRampLayoutConfig {
+  entrance: Position3D;
+  exit: Position3D;
+  splinePoints: Position3D[];
+  exitVelocity: Position3D;
+  score: number;
+}
+
+export interface DropTargetLayoutConfig {
+  id: string;
+  position: Position3D;
+  width: number;
+  depth: number;
+  height: number;
+  color: number;
+  score: number;
+}
+
+export interface SpotTargetLayoutConfig {
+  id: string;
+  position: Position3D;
+  radius: number;
+  height: number;
+  color: number;
+  score: number;
+}
+
+export interface UfoBeamLayoutConfig {
+  id: string;
+  type: 'yellow' | 'red' | 'green';
+  position: Position3D;
+  color: number;
+  captureRadius: number;
+  ejectDirection: { x: number; y: number };
+  ejectSpeed: number;
+  score: number;
+}
+
+export interface SpinnerLayoutConfig {
+  id: string;
+  side: 'left' | 'right';
+  position: Position3D;
+  radius: number;
+  width: number;
+  color: number;
+  baseScore: number;
+  boostedScore: number;
+}
+
+export interface SpaceWarpLayoutConfig {
+  id: string;
+  position: Position3D;
+  width: number;
+  length: number;
+  color: number;
+  score: number;
+}
+
 /**
  * Complete layout specifications for table elements in Galactic Recruit Pinball.
  * Coordinates are in world units on the table playfield:
@@ -150,4 +208,122 @@ export const TABLE_LAYOUT = {
     // Right inlane/outlane divider
     { position: { x: 6.8, y: -13.5, z: 0.4 }, width: 0.3, length: 6.0, height: 0.8 },
   ],
+
+  // 6. Cannon Launch Ramp & Wire Habitrail
+  LAUNCH_RAMP: {
+    entrance: { x: -6.8, y: 1.0, z: 0.5 } as Position3D,
+    exit: { x: 1.0, y: 12.0, z: 0.8 } as Position3D,
+    splinePoints: [
+      { x: -6.8, y: 1.0, z: 0.5 },
+      { x: -7.2, y: 7.0, z: 1.5 },
+      { x: -6.5, y: 13.0, z: 2.2 },
+      { x: -3.5, y: 17.5, z: 2.5 },
+      { x: 0.0, y: 15.0, z: 1.8 },
+      { x: 1.0, y: 12.0, z: 0.8 },
+    ] as Position3D[],
+    exitVelocity: { x: 1.5, y: -12.0, z: 0 } as Position3D,
+    score: 10000,
+  } as LaunchRampLayoutConfig,
+
+  // 7. Drop Targets (Booster Targets on Mid-Left)
+  DROP_TARGETS: {
+    BOOSTER: [
+      { id: 'booster-1', position: { x: -5.8, y: 7.0, z: 0.5 }, width: 0.3, depth: 1.2, height: 0.8, color: COLORS.NEON_YELLOW, score: 1000 },
+      { id: 'booster-2', position: { x: -5.8, y: 8.8, z: 0.5 }, width: 0.3, depth: 1.2, height: 0.8, color: COLORS.NEON_YELLOW, score: 1000 },
+      { id: 'booster-3', position: { x: -5.8, y: 10.6, z: 0.5 }, width: 0.3, depth: 1.2, height: 0.8, color: COLORS.NEON_YELLOW, score: 1000 },
+    ] as DropTargetLayoutConfig[],
+  },
+
+  // 8. Spot Targets (Mission, Medal, and Hazards)
+  SPOT_TARGETS: {
+    MISSION: [
+      { id: 'mission-1', position: { x: -1.6, y: 0.0, z: 0.5 }, radius: 0.4, height: 0.8, color: COLORS.NEON_CYAN, score: 2000 },
+      { id: 'mission-2', position: { x: 0.0, y: 0.0, z: 0.5 }, radius: 0.4, height: 0.8, color: COLORS.NEON_CYAN, score: 2000 },
+      { id: 'mission-3', position: { x: 1.6, y: 0.0, z: 0.5 }, radius: 0.4, height: 0.8, color: COLORS.NEON_CYAN, score: 2000 },
+    ] as SpotTargetLayoutConfig[],
+    MEDAL: [
+      { id: 'medal-1', position: { x: -3.5, y: 12.0, z: 0.5 }, radius: 0.4, height: 0.8, color: COLORS.NEON_PINK, score: 3000 },
+      { id: 'medal-2', position: { x: -2.0, y: 13.2, z: 0.5 }, radius: 0.4, height: 0.8, color: COLORS.NEON_PINK, score: 3000 },
+      { id: 'medal-3', position: { x: -0.5, y: 14.4, z: 0.5 }, radius: 0.4, height: 0.8, color: COLORS.NEON_PINK, score: 3000 },
+    ] as SpotTargetLayoutConfig[],
+    HAZARDS_LEFT: [
+      { id: 'hazard-l1', position: { x: -3.8, y: -4.5, z: 0.5 }, radius: 0.4, height: 0.8, color: COLORS.NEON_YELLOW, score: 1500 },
+      { id: 'hazard-l2', position: { x: -3.8, y: -3.0, z: 0.5 }, radius: 0.4, height: 0.8, color: COLORS.NEON_YELLOW, score: 1500 },
+      { id: 'hazard-l3', position: { x: -3.8, y: -1.5, z: 0.5 }, radius: 0.4, height: 0.8, color: COLORS.NEON_YELLOW, score: 1500 },
+    ] as SpotTargetLayoutConfig[],
+    HAZARDS_RIGHT: [
+      { id: 'hazard-r1', position: { x: 3.8, y: -4.5, z: 0.5 }, radius: 0.4, height: 0.8, color: COLORS.NEON_YELLOW, score: 1500 },
+      { id: 'hazard-r2', position: { x: 3.8, y: -3.0, z: 0.5 }, radius: 0.4, height: 0.8, color: COLORS.NEON_YELLOW, score: 1500 },
+      { id: 'hazard-r3', position: { x: 3.8, y: -1.5, z: 0.5 }, radius: 0.4, height: 0.8, color: COLORS.NEON_YELLOW, score: 1500 },
+    ] as SpotTargetLayoutConfig[],
+  },
+
+  // 9. 3 UFO Beams (Yellow mid-left, Red upper-right, Green lower-left)
+  UFO_BEAMS: {
+    YELLOW: {
+      id: 'ufo-beam-yellow',
+      type: 'yellow',
+      position: { x: -6.5, y: -2.5, z: 0.1 } as Position3D,
+      color: COLORS.NEON_YELLOW,
+      captureRadius: 1.2,
+      ejectDirection: { x: 0.8, y: -0.6 },
+      ejectSpeed: 16,
+      score: 10000,
+    } as UfoBeamLayoutConfig,
+    RED: {
+      id: 'ufo-beam-red',
+      type: 'red',
+      position: { x: 6.2, y: 3.5, z: 0.1 } as Position3D,
+      color: COLORS.NEON_PINK,
+      captureRadius: 1.2,
+      ejectDirection: { x: -0.7, y: -0.7 },
+      ejectSpeed: 16,
+      score: 10000,
+    } as UfoBeamLayoutConfig,
+    GREEN: {
+      id: 'ufo-beam-green',
+      type: 'green',
+      position: { x: -6.5, y: -7.5, z: 0.1 } as Position3D,
+      color: COLORS.NEON_GREEN,
+      captureRadius: 1.2,
+      ejectDirection: { x: 0.6, y: 0.8 },
+      ejectSpeed: 16,
+      score: 10000,
+    } as UfoBeamLayoutConfig,
+  },
+
+  // 10. Alien Spinners (Left and Right)
+  SPINNERS: {
+    LEFT: {
+      id: 'spinner-left',
+      side: 'left',
+      position: { x: -6.5, y: -0.5, z: 0.6 } as Position3D,
+      radius: 0.6,
+      width: 1.0,
+      color: COLORS.NEON_CYAN,
+      baseScore: 100,
+      boostedScore: 1000,
+    } as SpinnerLayoutConfig,
+    RIGHT: {
+      id: 'spinner-right',
+      side: 'right',
+      position: { x: 6.5, y: -0.5, z: 0.6 } as Position3D,
+      radius: 0.6,
+      width: 1.0,
+      color: COLORS.NEON_PINK,
+      baseScore: 100,
+      boostedScore: 1000,
+    } as SpinnerLayoutConfig,
+  },
+
+  // 11. Space Warp Rollover
+  SPACE_WARP: {
+    id: 'space-warp-rollover',
+    position: { x: 3.5, y: -7.5, z: 0.1 } as Position3D,
+    width: 1.8,
+    length: 2.0,
+    color: COLORS.NEON_CYAN,
+    score: 5000,
+  } as SpaceWarpLayoutConfig,
 } as const;
+
