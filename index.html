@@ -12,6 +12,7 @@
         --color-neon-green: #00ff66;
         --color-neon-cyan: #00e5ff;
         --color-neon-pink: #ff007f;
+        --color-neon-yellow: #ffee00;
         --color-hud-border: #1a233a;
         --font-mono: 'Courier New', Courier, monospace;
       }
@@ -77,11 +78,11 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: rgba(5, 8, 16, 0.85);
+        background: rgba(5, 8, 16, 0.88);
         border: 1px solid var(--color-hud-border);
         border-radius: 4px;
         padding: 8px 16px;
-        box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+        box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
         pointer-events: auto;
       }
 
@@ -98,10 +99,28 @@
         gap: 16px;
         font-size: 0.85rem;
         color: var(--color-neon-cyan);
+        align-items: center;
       }
 
       .hud-info span {
         color: #ffffff;
+      }
+
+      .camera-btn {
+        background: rgba(0, 229, 255, 0.15);
+        border: 1px solid var(--color-neon-cyan);
+        color: var(--color-neon-cyan);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .camera-btn:hover {
+        background: rgba(0, 229, 255, 0.35);
+        box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
       }
 
       .hud-ticker-bar {
@@ -125,12 +144,106 @@
         text-shadow: 0 0 6px rgba(0, 255, 102, 0.7);
         white-space: nowrap;
       }
+
+      /* Attract Mode Overlay */
+      #attract-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at center, rgba(5, 8, 20, 0.75) 0%, rgba(2, 3, 8, 0.92) 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 100;
+        cursor: pointer;
+        padding: 20px;
+        text-align: center;
+        transition: opacity 0.3s ease;
+      }
+
+      .attract-badge {
+        color: var(--color-neon-pink);
+        font-size: 0.9rem;
+        letter-spacing: 4px;
+        margin-bottom: 8px;
+        text-shadow: 0 0 10px var(--color-neon-pink);
+      }
+
+      .attract-title {
+        font-size: 2.4rem;
+        font-weight: 900;
+        color: #ffffff;
+        letter-spacing: 6px;
+        text-transform: uppercase;
+        background: linear-gradient(180deg, #00ff66 0%, #00e5ff 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 20px rgba(0, 255, 102, 0.5);
+        margin-bottom: 6px;
+      }
+
+      .attract-subtitle {
+        color: var(--color-neon-yellow);
+        font-size: 0.85rem;
+        letter-spacing: 2px;
+        margin-bottom: 28px;
+        text-shadow: 0 0 8px rgba(255, 238, 0, 0.5);
+      }
+
+      .attract-prompt {
+        font-size: 1.15rem;
+        font-weight: bold;
+        color: var(--color-neon-green);
+        letter-spacing: 3px;
+        padding: 12px 24px;
+        border: 2px solid var(--color-neon-green);
+        border-radius: 6px;
+        background: rgba(0, 255, 102, 0.1);
+        box-shadow: 0 0 16px rgba(0, 255, 102, 0.35);
+        margin-bottom: 28px;
+        transition: opacity 0.2s ease;
+      }
+
+      .attract-controls-box {
+        background: rgba(10, 15, 30, 0.8);
+        border: 1px solid rgba(0, 229, 255, 0.3);
+        border-radius: 6px;
+        padding: 12px 20px;
+        display: flex;
+        gap: 20px;
+        font-size: 0.8rem;
+        color: #ccddee;
+      }
+
+      .attract-controls-box span {
+        color: var(--color-neon-cyan);
+        font-weight: bold;
+      }
     </style>
   </head>
   <body>
     <div id="app">
       <div id="game-container">
         <canvas id="pinball-canvas"></canvas>
+
+        <!-- Attract Mode Title Overlay -->
+        <div id="attract-overlay">
+          <div class="attract-badge">★ DEFENDER CORPS ★</div>
+          <h1 class="attract-title">GALACTIC RECRUIT</h1>
+          <div class="attract-subtitle">SPACE INVADERS 3D PINBALL • 9 RANKS • 17 MISSIONS</div>
+          <div id="attract-prompt" class="attract-prompt">PRESS SPACE OR TAP TO LAUNCH</div>
+          <div class="attract-controls-box">
+            <div><span>Z / M</span> FLIPPERS</div>
+            <div><span>SPACE</span> CHARGE PLUNGER</div>
+            <div><span>X / . / ↑</span> NUDGE</div>
+            <div><span>C</span> CAMERA TOGGLE</div>
+          </div>
+        </div>
+
+        <!-- In-Game HUD Overlay -->
         <div id="hud-overlay">
           <div>
             <header class="hud-header">
@@ -140,6 +253,7 @@
                 <div>MULT: <span id="mult-display">1X</span></div>
                 <div>BALL: <span id="ball-display">1</span></div>
                 <div>RANK: <span id="rank-display">ROOKIE DEFENDER</span></div>
+                <button id="camera-btn" class="camera-btn">CAM: <span id="camera-mode-display">FIXED</span></button>
               </div>
             </header>
             <div class="hud-ticker-bar">

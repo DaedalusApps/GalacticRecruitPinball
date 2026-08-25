@@ -90,16 +90,16 @@
 
 | ID | Task | Red-first Artifact | Done When | Status |
 | :--- | :--- | :--- | :--- | :---: |
-| P4.1 | PBR materials (table, flippers, bumpers) | Flat shading → glossy PBR | Realistic lighting, reflections, metallic surfaces | 🔴 |
-| P4.2 | Space Invader alien models (bumpers) | Placeholder spheres → 3D pixel aliens | Squid, crab, octopus aliens on bumpers | 🔴 |
-| P4.3 | UFO models over wormholes | No models → spinning UFOs | 3 UFO models hover above beam entry points | 🔴 |
-| P4.4 | Mothership model | No model → large UFO at gravity well | Animated mothership with tractor beam visuals | 🔴 |
-| P4.5 | Neon light system with bloom | No glow → all table lights bloom | Progress ring, bumper lamps, lane lights all glow | 🔴 |
-| P4.6 | Particle effects | No particles → VFX on events | Bumper hits, drain, promotion particles | 🔴 |
-| P4.7 | Screen shake | No feedback → shake on events | Big hits and promotions trigger screen shake | 🔴 |
-| P4.8 | Attract mode | Game starts immediately → title + demo | Attract screen with title, demo ball, press start | 🔴 |
+| P4.1 | PBR materials (table, flippers, bumpers) | Flat shading → glossy PBR | Realistic lighting, reflections, metallic surfaces | 🟢 |
+| P4.2 | Space Invader alien models (bumpers) | Placeholder spheres → 3D pixel aliens | Squid, crab, octopus aliens on bumpers | 🟢 |
+| P4.3 | UFO models over wormholes | No models → spinning UFOs | 3 UFO models hover above beam entry points | 🟢 |
+| P4.4 | Mothership model | No model → large UFO at gravity well | Animated mothership with tractor beam visuals | 🟢 |
+| P4.5 | Neon light system with bloom | No glow → all table lights bloom | Progress ring, bumper lamps, lane lights all glow | 🟢 |
+| P4.6 | Particle effects | No particles → VFX on events | Bumper hits, drain, promotion particles | 🟢 |
+| P4.7 | Screen shake | No feedback → shake on events | Big hits and promotions trigger screen shake | 🟢 |
+| P4.8 | Attract mode | Game starts immediately → title + demo | Attract screen with title, demo ball, press start | 🟢 |
 
-**Milestone**: Visually polished and themed ✅/❌
+**Milestone**: Visually polished and themed ✅
 
 ---
 
