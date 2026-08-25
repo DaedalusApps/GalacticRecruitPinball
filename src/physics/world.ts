@@ -2,7 +2,16 @@ import * as CANNON from 'cannon-es';
 import { TABLE, PHYSICS, BALL, FLIPPER } from '../utils/constants';
 import { Pinball } from './ball';
 import { Flipper } from './flipper';
-import { Slingshot, AttackBumper } from '../table/elements';
+import {
+  Slingshot,
+  AttackBumper,
+  LaunchRamp,
+  DropTargetBank,
+  SpotTargetBank,
+  UfoBeamSinkHole,
+  AlienSpinner,
+  SpaceWarpRollover,
+} from '../table/elements';
 
 /**
  * PhysicsWorld wraps the Cannon-es 3D physics engine with inclined gravity,
@@ -20,6 +29,12 @@ export class PhysicsWorld {
   public flippers: Flipper[] = [];
   public slingshots: Slingshot[] = [];
   public bumpers: AttackBumper[] = [];
+  public launchRamps: LaunchRamp[] = [];
+  public dropTargetBanks: DropTargetBank[] = [];
+  public spotTargetBanks: SpotTargetBank[] = [];
+  public ufoBeams: UfoBeamSinkHole[] = [];
+  public spinners: AlienSpinner[] = [];
+  public spaceWarps: SpaceWarpRollover[] = [];
 
   constructor() {
     // 1. Initialize Cannon-es World
@@ -248,6 +263,132 @@ export class PhysicsWorld {
     if (idx !== -1) {
       this.bumpers.splice(idx, 1);
       this.world.removeBody(bumper.body);
+    }
+  }
+
+  /**
+   * Adds a LaunchRamp to the physics simulation world.
+   */
+  public addLaunchRamp(ramp: LaunchRamp): void {
+    if (!this.launchRamps.includes(ramp)) {
+      this.launchRamps.push(ramp);
+      this.world.addBody(ramp.entranceBody);
+    }
+  }
+
+  public removeLaunchRamp(ramp: LaunchRamp): void {
+    const idx = this.launchRamps.indexOf(ramp);
+    if (idx !== -1) {
+      this.launchRamps.splice(idx, 1);
+      this.world.removeBody(ramp.entranceBody);
+    }
+  }
+
+  /**
+   * Adds a DropTargetBank and its target bodies to the physics world.
+   */
+  public addDropTargetBank(bank: DropTargetBank): void {
+    if (!this.dropTargetBanks.includes(bank)) {
+      this.dropTargetBanks.push(bank);
+      for (const target of bank.targets) {
+        this.world.addBody(target.body);
+        target.body.addEventListener('collide', (e: { body: CANNON.Body }) => {
+          for (const pinball of this.pinballs) {
+            if (pinball.body === e.body) {
+              target.handleBallContact(pinball);
+              break;
+            }
+          }
+        });
+      }
+    }
+  }
+
+  public removeDropTargetBank(bank: DropTargetBank): void {
+    const idx = this.dropTargetBanks.indexOf(bank);
+    if (idx !== -1) {
+      this.dropTargetBanks.splice(idx, 1);
+      for (const target of bank.targets) {
+        this.world.removeBody(target.body);
+      }
+    }
+  }
+
+  /**
+   * Adds a SpotTargetBank and its target bodies to the physics world.
+   */
+  public addSpotTargetBank(bank: SpotTargetBank): void {
+    if (!this.spotTargetBanks.includes(bank)) {
+      this.spotTargetBanks.push(bank);
+      for (const target of bank.targets) {
+        this.world.addBody(target.body);
+        target.body.addEventListener('collide', (e: { body: CANNON.Body }) => {
+          for (const pinball of this.pinballs) {
+            if (pinball.body === e.body) {
+              target.handleBallContact(pinball);
+              break;
+            }
+          }
+        });
+      }
+    }
+  }
+
+  public removeSpotTargetBank(bank: SpotTargetBank): void {
+    const idx = this.spotTargetBanks.indexOf(bank);
+    if (idx !== -1) {
+      this.spotTargetBanks.splice(idx, 1);
+      for (const target of bank.targets) {
+        this.world.removeBody(target.body);
+      }
+    }
+  }
+
+  /**
+   * Adds a UfoBeamSinkHole to the world.
+   */
+  public addUfoBeam(beam: UfoBeamSinkHole): void {
+    if (!this.ufoBeams.includes(beam)) {
+      this.ufoBeams.push(beam);
+    }
+  }
+
+  public removeUfoBeam(beam: UfoBeamSinkHole): void {
+    const idx = this.ufoBeams.indexOf(beam);
+    if (idx !== -1) {
+      this.ufoBeams.splice(idx, 1);
+    }
+  }
+
+  /**
+   * Adds an AlienSpinner to the world.
+   */
+  public addSpinner(spinner: AlienSpinner): void {
+    if (!this.spinners.includes(spinner)) {
+      this.spinners.push(spinner);
+    }
+  }
+
+  public removeSpinner(spinner: AlienSpinner): void {
+    const idx = this.spinners.indexOf(spinner);
+    if (idx !== -1) {
+      this.spinners.splice(idx, 1);
+    }
+  }
+
+  /**
+   * Adds a SpaceWarpRollover to the world.
+   */
+  public addSpaceWarp(warp: SpaceWarpRollover): void {
+    if (!this.spaceWarps.includes(warp)) {
+      this.spaceWarps.push(warp);
+    }
+  }
+
+  public removeSpaceWarp(warp: SpaceWarpRollover): void {
+    const idx = this.spaceWarps.indexOf(warp);
+    if (idx !== -1) {
+      this.spaceWarps.splice(idx, 1);
     }
   }
 

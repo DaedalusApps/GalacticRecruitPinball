@@ -7,7 +7,17 @@ import { Flipper } from './physics/flipper';
 import { Plunger } from './physics/plunger';
 import { KeyboardManager } from './input/keyboard';
 import { TABLE_LAYOUT } from './table/layout';
-import { Slingshot, AttackBumper, ReentryLaneSystem } from './table/elements';
+import {
+  Slingshot,
+  AttackBumper,
+  ReentryLaneSystem,
+  LaunchRamp,
+  DropTargetBank,
+  SpotTargetBank,
+  UfoBeamSinkHole,
+  AlienSpinner,
+  SpaceWarpRollover,
+} from './table/elements';
 
 export class GameApp {
   public tableScene: TableScene;
@@ -24,6 +34,16 @@ export class GameApp {
   public rightSlingshot: Slingshot;
   public bumpers: AttackBumper[] = [];
   public reentrySystem: ReentryLaneSystem;
+  public launchRamp: LaunchRamp;
+  public boosterDropTargets: DropTargetBank;
+  public missionSpotTargets: SpotTargetBank;
+  public medalSpotTargets: SpotTargetBank;
+  public hazardLeftSpotTargets: SpotTargetBank;
+  public hazardRightSpotTargets: SpotTargetBank;
+  public ufoBeams: UfoBeamSinkHole[] = [];
+  public leftSpinner: AlienSpinner;
+  public rightSpinner: AlienSpinner;
+  public spaceWarp: SpaceWarpRollover;
   public keyboard: KeyboardManager;
   public isRunning: boolean = false;
   private animFrameId: number | null = null;
@@ -116,7 +136,117 @@ export class GameApp {
       this.scene.add(lane.mesh);
     }
 
-    // 7. Initialize Keyboard Controls
+    // 7. Initialize Launch Ramp & Wire Habitrail
+    this.launchRamp = new LaunchRamp({
+      id: 'cannon-launch-ramp',
+      config: TABLE_LAYOUT.LAUNCH_RAMP,
+      material: this.physicsWorld.wallMaterial,
+    });
+    this.physicsWorld.addLaunchRamp(this.launchRamp);
+    this.scene.add(this.launchRamp.mesh);
+
+    // 8. Initialize Booster Drop Targets
+    this.boosterDropTargets = new DropTargetBank({
+      id: 'booster-drop-targets',
+      configs: TABLE_LAYOUT.DROP_TARGETS.BOOSTER,
+      material: this.physicsWorld.wallMaterial,
+    });
+    this.physicsWorld.addDropTargetBank(this.boosterDropTargets);
+    for (const target of this.boosterDropTargets.targets) {
+      this.scene.add(target.mesh);
+    }
+
+    // 9. Initialize Spot Target Banks
+    this.missionSpotTargets = new SpotTargetBank({
+      id: 'mission-spot-targets',
+      configs: TABLE_LAYOUT.SPOT_TARGETS.MISSION,
+      material: this.physicsWorld.wallMaterial,
+    });
+    this.physicsWorld.addSpotTargetBank(this.missionSpotTargets);
+    for (const target of this.missionSpotTargets.targets) {
+      this.scene.add(target.mesh);
+    }
+
+    this.medalSpotTargets = new SpotTargetBank({
+      id: 'medal-spot-targets',
+      configs: TABLE_LAYOUT.SPOT_TARGETS.MEDAL,
+      material: this.physicsWorld.wallMaterial,
+    });
+    this.physicsWorld.addSpotTargetBank(this.medalSpotTargets);
+    for (const target of this.medalSpotTargets.targets) {
+      this.scene.add(target.mesh);
+    }
+
+    this.hazardLeftSpotTargets = new SpotTargetBank({
+      id: 'hazard-left-spot-targets',
+      configs: TABLE_LAYOUT.SPOT_TARGETS.HAZARDS_LEFT,
+      material: this.physicsWorld.wallMaterial,
+    });
+    this.physicsWorld.addSpotTargetBank(this.hazardLeftSpotTargets);
+    for (const target of this.hazardLeftSpotTargets.targets) {
+      this.scene.add(target.mesh);
+    }
+
+    this.hazardRightSpotTargets = new SpotTargetBank({
+      id: 'hazard-right-spot-targets',
+      configs: TABLE_LAYOUT.SPOT_TARGETS.HAZARDS_RIGHT,
+      material: this.physicsWorld.wallMaterial,
+    });
+    this.physicsWorld.addSpotTargetBank(this.hazardRightSpotTargets);
+    for (const target of this.hazardRightSpotTargets.targets) {
+      this.scene.add(target.mesh);
+    }
+
+    // 10. Initialize 3 UFO Beams (Yellow, Red, Green)
+    this.ufoBeams = [
+      new UfoBeamSinkHole({
+        id: 'ufo-beam-yellow',
+        config: TABLE_LAYOUT.UFO_BEAMS.YELLOW,
+      }),
+      new UfoBeamSinkHole({
+        id: 'ufo-beam-red',
+        config: TABLE_LAYOUT.UFO_BEAMS.RED,
+      }),
+      new UfoBeamSinkHole({
+        id: 'ufo-beam-green',
+        config: TABLE_LAYOUT.UFO_BEAMS.GREEN,
+      }),
+    ];
+    for (const beam of this.ufoBeams) {
+      this.physicsWorld.addUfoBeam(beam);
+      this.scene.add(beam.mesh);
+    }
+
+    // 11. Initialize Left & Right Alien Spinners
+    this.leftSpinner = new AlienSpinner({
+      id: 'spinner-left',
+      config: TABLE_LAYOUT.SPINNERS.LEFT,
+    });
+    this.physicsWorld.addSpinner(this.leftSpinner);
+    this.scene.add(this.leftSpinner.mesh);
+
+    this.rightSpinner = new AlienSpinner({
+      id: 'spinner-right',
+      config: TABLE_LAYOUT.SPINNERS.RIGHT,
+    });
+    this.physicsWorld.addSpinner(this.rightSpinner);
+    this.scene.add(this.rightSpinner.mesh);
+
+    // Booster Target clear upgrades spinners
+    this.boosterDropTargets.onBankCleared = () => {
+      this.leftSpinner.setBoosted(true);
+      this.rightSpinner.setBoosted(true);
+    };
+
+    // 12. Initialize Space Warp Rollover
+    this.spaceWarp = new SpaceWarpRollover({
+      id: 'space-warp-rollover',
+      config: TABLE_LAYOUT.SPACE_WARP,
+    });
+    this.physicsWorld.addSpaceWarp(this.spaceWarp);
+    this.scene.add(this.spaceWarp.mesh);
+
+    // 13. Initialize Keyboard Controls
     this.keyboard = new KeyboardManager();
     this.setupKeyboardControls();
 
@@ -195,6 +325,24 @@ export class GameApp {
       bumper.update(deltaSec);
     }
     this.reentrySystem.update(deltaSec, this.pinball);
+
+    // Update new elements
+    this.launchRamp.checkEntry(this.pinball);
+    this.launchRamp.update(deltaSec, this.pinball);
+    this.boosterDropTargets.update(deltaSec);
+    this.missionSpotTargets.update(deltaSec);
+    this.medalSpotTargets.update(deltaSec);
+    this.hazardLeftSpotTargets.update(deltaSec);
+    this.hazardRightSpotTargets.update(deltaSec);
+    for (const beam of this.ufoBeams) {
+      beam.checkCapture(this.pinball);
+      beam.update(deltaSec, this.pinball);
+    }
+    this.leftSpinner.update(deltaSec, this.pinball);
+    this.rightSpinner.update(deltaSec, this.pinball);
+    this.spaceWarp.checkRollover(this.pinball);
+    this.spaceWarp.update(deltaSec);
+
     this.physicsWorld.step(deltaSec);
     this.pinball.sync();
   }

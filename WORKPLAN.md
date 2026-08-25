@@ -32,16 +32,16 @@
 
 | ID | Task | Red-first Artifact | Done When | Status |
 | :--- | :--- | :--- | :--- | :---: |
-| P1.1 | Full table walls + lanes as collision geometry | Ball escapes bounds → contained in full layout | Ball stays on table through all paths | 🔴 |
-| P1.2 | Slingshots with impulse | Ball passes through → kicked upfield | Triangular kickers deflect ball with 500pt score | 🔴 |
-| P1.3 | 3 Attack Bumpers (hit + impulse) | Ball passes through → bounced with points | 3 circular bumpers apply impulse, score 500/1500/4000 | 🔴 |
-| P1.4 | Re-entry Lanes (3 top rollovers) | No detection → rollover triggers register | Flipper buttons rotate lit lanes, all 3 completable | 🔴 |
-| P1.5 | Cannon Launch Tube (ramp) | Ball can't reach ramp → ball rides up, follows rail | Ramp capture → habitrail → exit works | 🔴 |
-| P1.6 | Drop target banks | No drops → targets drop on hit, reset on clear | Booster targets (3 drops), clear awards bonus | 🔴 |
-| P1.7 | Spot target banks | No spots → targets register hits | Mission, Medal, Hazard targets all register | 🔴 |
-| P1.8 | 3 UFO Beams (wormholes) | Ball passes over → captured + ejected | Ball captured, teleported, ejected from another hole | 🔴 |
-| P1.9 | Alien Disc spinners | No spinners → spin on ball contact | Spinner rotates, increments counter, awards pts | 🔴 |
-| P1.10 | Space Warp rollover | No detection → registers hit | Rollover triggers and scores | 🔴 |
+| P1.1 | Full table walls + lanes as collision geometry | Ball escapes bounds → contained in full layout | Ball stays on table through all paths | 🟢 |
+| P1.2 | Slingshots with impulse | Ball passes through → kicked upfield | Triangular kickers deflect ball with 500pt score | 🟢 |
+| P1.3 | 3 Attack Bumpers (hit + impulse) | Ball passes through → bounced with points | 3 circular bumpers apply impulse, score 500/1500/4000 | 🟢 |
+| P1.4 | Re-entry Lanes (3 top rollovers) | No detection → rollover triggers register | Flipper buttons rotate lit lanes, all 3 completable | 🟢 |
+| P1.5 | Cannon Launch Tube (ramp) | Ball can't reach ramp → ball rides up, follows rail | Ramp capture → habitrail → exit works | 🟢 |
+| P1.6 | Drop target banks | No drops → targets drop on hit, reset on clear | Booster targets (3 drops), clear awards bonus | 🟢 |
+| P1.7 | Spot target banks | No spots → targets register hits | Mission, Medal, Hazard targets all register | 🟢 |
+| P1.8 | 3 UFO Beams (wormholes) | Ball passes over → captured + ejected | Ball captured, teleported, ejected from another hole | 🟢 |
+| P1.9 | Alien Disc spinners | No spinners → spin on ball contact | Spinner rotates, increments counter, awards pts | 🟢 |
+| P1.10 | Space Warp rollover | No detection → registers hit | Rollover triggers and scores | 🟢 |
 | P1.11 | Outlanes + drain + kickback | Ball drains silently → drain detected, kickback fires | Left outlane kickback works when armed | 🔴 |
 | P1.12 | Center post (barrier drone) | No post → post pops up, blocks drain | Post deploys, absorbs one center drain, lowers | 🔴 |
 | P1.13 | Skill Shot lane | No detection → rollover lights register | 6 skill shot positions score correctly | 🔴 |
