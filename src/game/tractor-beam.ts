@@ -14,7 +14,7 @@ import * as THREE from 'three';
 import { Pinball } from '../physics/ball';
 import { Position3D } from '../table/layout';
 import { COLORS, BALL } from '../utils/constants';
-import { createMetallicTrimMaterial, createNeonAccentMaterial } from '../rendering/materials';
+import { AlienModelFactory } from '../rendering/models';
 
 export interface MothershipTractorBeamOptions {
   id?: string;
@@ -129,57 +129,11 @@ export class MothershipTractorBeam {
    * glowing perimeter thrusters, and bottom beam emitter.
    */
   private createMothershipUfoMesh(): THREE.Group {
-    const group = new THREE.Group();
-    group.name = 'mothership-ufo-body';
-
-    const metallicMat = createMetallicTrimMaterial();
-    const neonMat = createNeonAccentMaterial(this.color);
-    const darkHullMat = new THREE.MeshStandardMaterial({
-      color: 0x181e2b,
-      metalness: 0.9,
-      roughness: 0.25,
+    const factory = new AlienModelFactory();
+    return factory.createMothershipMesh({
+      color: this.color,
+      scale: 1.0,
     });
-
-    // (a) Main saucer disc hull
-    const saucerGeom = new THREE.CylinderGeometry(1.6, 2.4, 0.45, 32);
-    saucerGeom.rotateX(Math.PI / 2);
-    const saucerMesh = new THREE.Mesh(saucerGeom, darkHullMat);
-    saucerMesh.castShadow = true;
-    group.add(saucerMesh);
-
-    // (b) Metallic outer rim flange
-    const rimGeom = new THREE.TorusGeometry(2.4, 0.1, 16, 32);
-    const rimMesh = new THREE.Mesh(rimGeom, metallicMat);
-    group.add(rimMesh);
-
-    // (c) Top cockpit command dome
-    const domeGeom = new THREE.SphereGeometry(0.9, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2);
-    domeGeom.rotateX(Math.PI / 2);
-    const domeMesh = new THREE.Mesh(domeGeom, neonMat);
-    domeMesh.position.set(0, 0, 0.22);
-    group.add(domeMesh);
-
-    // (d) Bottom tractor beam emitter lens
-    const emitterGeom = new THREE.CylinderGeometry(0.8, 0.5, 0.2, 24);
-    emitterGeom.rotateX(Math.PI / 2);
-    const emitterMesh = new THREE.Mesh(emitterGeom, neonMat);
-    emitterMesh.position.set(0, 0, -0.25);
-    group.add(emitterMesh);
-
-    // (e) Perimeter thruster indicator lights (8 surrounding lights)
-    for (let i = 0; i < 8; i++) {
-      const angle = (i / 8) * Math.PI * 2;
-      const thrusterGeom = new THREE.SphereGeometry(0.12, 8, 8);
-      const thrusterMesh = new THREE.Mesh(thrusterGeom, neonMat);
-      thrusterMesh.position.set(
-        Math.cos(angle) * 2.1,
-        Math.sin(angle) * 2.1,
-        0
-      );
-      group.add(thrusterMesh);
-    }
-
-    return group;
   }
 
   /**

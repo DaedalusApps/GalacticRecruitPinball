@@ -76,6 +76,8 @@ export const COLORS = {
   NEON_CYAN: 0x00e5ff,
   NEON_PINK: 0xff007f,
   NEON_YELLOW: 0xffe600,
+  NEON_ORANGE: 0xff7700,
+  NEON_PURPLE: 0xaa00ff,
   CHROME_BALL: 0xe0e8f5,
   WIRE_RAIL: 0x88bbff,
 } as const;

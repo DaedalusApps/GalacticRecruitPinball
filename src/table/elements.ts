@@ -20,6 +20,7 @@ import { TableLight, LightGroup } from './lights';
 import { Pinball } from '../physics/ball';
 import { BUMPERS, COLORS, BALL } from '../utils/constants';
 import { createMetallicTrimMaterial, createNeonAccentMaterial } from '../rendering/materials';
+import { AlienModelFactory } from '../rendering/models';
 
 // ============================================================================
 // 1. SLINGSHOT (Triangular Kicker with Impulse)
@@ -324,29 +325,20 @@ export class AttackBumper {
   }
 
   private createAlienHeadMesh(): THREE.Group {
-    const group = new THREE.Group();
-    const eyeMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      emissive: 0xffffff,
-      emissiveIntensity: 1.0,
-    });
+    const factory = new AlienModelFactory();
+    let alien: THREE.Group;
 
-    // Left and right eye dots
-    const eyeGeom = new THREE.BoxGeometry(0.12, 0.12, 0.08);
-    const leftEye = new THREE.Mesh(eyeGeom, eyeMat);
-    leftEye.position.set(-0.3, 0, 0);
-    const rightEye = new THREE.Mesh(eyeGeom, eyeMat);
-    rightEye.position.set(0.3, 0, 0);
-    group.add(leftEye);
-    group.add(rightEye);
+    if (this.id.includes('1') || this.id.includes('top')) {
+      alien = factory.createSquidMesh({ color: this.getColor(), voxelSize: 0.11, depth: 0.2 });
+    } else if (this.id.includes('2') || this.id.includes('left')) {
+      alien = factory.createCrabMesh({ color: this.getColor(), voxelSize: 0.09, depth: 0.2 });
+    } else {
+      alien = factory.createOctopusMesh({ color: this.getColor(), voxelSize: 0.085, depth: 0.2 });
+    }
 
-    // Center pixel antenna/crest
-    const crestGeom = new THREE.BoxGeometry(0.2, 0.1, 0.15);
-    const crestMesh = new THREE.Mesh(crestGeom, this.capMaterial);
-    crestMesh.position.set(0, 0.2, 0.05);
-    group.add(crestMesh);
-
-    return group;
+    // Orient alien standing upwards on bumper cap
+    alien.rotation.x = Math.PI / 2;
+    return alien;
   }
 
   /**
@@ -1314,34 +1306,12 @@ export class UfoBeamSinkHole {
   }
 
   private createUfoMesh(): THREE.Group {
-    const group = new THREE.Group();
-    const ufoMat = new THREE.MeshStandardMaterial({
-      color: 0x334455,
-      metalness: 0.85,
-      roughness: 0.2,
+    const factory = new AlienModelFactory();
+    return factory.createUfoSaucerMesh({
+      beamType: this.beamType,
+      color: this.beamColor,
+      scale: 1.1,
     });
-    const glowMat = createNeonAccentMaterial(this.beamColor);
-
-    const saucerGeom = new THREE.CylinderGeometry(0.9, 1.3, 0.25, 24);
-    saucerGeom.rotateX(Math.PI / 2);
-    const saucer = new THREE.Mesh(saucerGeom, ufoMat);
-    group.add(saucer);
-
-    const domeGeom = new THREE.SphereGeometry(0.6, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
-    domeGeom.rotateX(Math.PI / 2);
-    const dome = new THREE.Mesh(domeGeom, glowMat);
-    dome.position.set(0, 0, 0.12);
-    group.add(dome);
-
-    for (let i = 0; i < 6; i++) {
-      const angle = (i / 6) * Math.PI * 2;
-      const dotGeom = new THREE.SphereGeometry(0.08, 8, 8);
-      const dot = new THREE.Mesh(dotGeom, glowMat);
-      dot.position.set(Math.cos(angle) * 1.1, Math.sin(angle) * 1.1, 0);
-      group.add(dot);
-    }
-
-    return group;
   }
 
   public checkCapture(pinball: Pinball): boolean {
