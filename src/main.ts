@@ -24,8 +24,10 @@ import {
   CenterPost,
   SkillShotLane,
 } from './table/elements';
+import { ProgressLightsRingVisual, EnergyCoreLadderVisual } from './table/lights';
 import { UfoProgressionSystem } from './game/ufo-progression';
 import { MothershipTractorBeam } from './game/tractor-beam';
+import { MissionControl } from './game/control';
 
 export class GameApp {
   public tableScene: TableScene;
@@ -58,6 +60,9 @@ export class GameApp {
   public skillShot: SkillShotLane;
   public tractorBeam: MothershipTractorBeam;
   public ufoProgression: UfoProgressionSystem;
+  public missionControl: MissionControl;
+  public progressLightsRing: ProgressLightsRingVisual;
+  public energyCoreLadder: EnergyCoreLadderVisual;
   public keyboard: KeyboardManager;
   public scoreManager: ScoreManager;
   public gameState: GameStateManager;
@@ -86,12 +91,26 @@ export class GameApp {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.2;
 
-    // 3. Initialize Score & Game State Managers
+    // 3. Initialize Score, Game State & Mission Control Managers
     this.scoreManager = new ScoreManager();
     this.gameState = new GameStateManager({ initialBalls: 3, ballSaverDuration: 10.0 });
+    this.missionControl = new MissionControl({
+      scoreManager: this.scoreManager,
+      gameState: this.gameState,
+      fuelDuration: 60.0,
+    });
     this.setupGameStateListeners();
 
-    // 4. Initialize Physics World, Pinball, Flippers & Plunger
+    // 4. Initialize Visual Lights Ring & Energy Core Ladder
+    this.progressLightsRing = new ProgressLightsRingVisual();
+    this.scene.add(this.progressLightsRing.mesh);
+
+    this.energyCoreLadder = new EnergyCoreLadderVisual();
+    this.scene.add(this.energyCoreLadder.mesh);
+
+    this.setupMissionControlListeners();
+
+    // 5. Initialize Physics World, Pinball, Flippers & Plunger
     this.physicsWorld = new PhysicsWorld();
     this.world = this.physicsWorld.world;
 
@@ -119,7 +138,7 @@ export class GameApp {
     this.physicsWorld.addBody(this.plunger.body);
     this.scene.add(this.plunger.mesh);
 
-    // 5. Initialize Slingshots (Left & Right)
+    // 6. Initialize Slingshots (Left & Right)
     this.leftSlingshot = new Slingshot({
       side: 'left',
       material: this.physicsWorld.wallMaterial,
@@ -127,6 +146,7 @@ export class GameApp {
     this.leftSlingshot.onHit = (score) => {
       if (!this.gameState.isTilted) {
         this.scoreManager.addPoints(score);
+        this.missionControl.handleHit('slingshot');
       }
     };
     this.physicsWorld.addSlingshot(this.leftSlingshot);
@@ -139,12 +159,13 @@ export class GameApp {
     this.rightSlingshot.onHit = (score) => {
       if (!this.gameState.isTilted) {
         this.scoreManager.addPoints(score);
+        this.missionControl.handleHit('slingshot');
       }
     };
     this.physicsWorld.addSlingshot(this.rightSlingshot);
     this.scene.add(this.rightSlingshot.mesh);
 
-    // 6. Initialize 3 Attack Bumpers
+    // 7. Initialize 3 Attack Bumpers
     this.bumpers = TABLE_LAYOUT.BUMPERS.map(
       (cfg, idx) =>
         new AttackBumper({
@@ -155,16 +176,18 @@ export class GameApp {
         })
     );
     for (const bumper of this.bumpers) {
-      bumper.onHit = (_b, score) => {
+      bumper.onHit = (b, score) => {
         if (!this.gameState.isTilted) {
           this.scoreManager.addPoints(score);
+          const isTop = b.id === 'bumper-1' || b.id === 'bumper-top';
+          this.missionControl.handleHit(isTop ? 'top_bumper' : 'bumper', { isTopBumper: isTop });
         }
       };
       this.physicsWorld.addBumper(bumper);
       this.scene.add(bumper.mesh);
     }
 
-    // 7. Initialize Re-entry Rollover Lanes System
+    // 8. Initialize Re-entry Rollover Lanes System
     this.reentrySystem = new ReentryLaneSystem({
       bumpers: this.bumpers,
       laneConfigs: TABLE_LAYOUT.REENTRY_LANES,
@@ -173,24 +196,35 @@ export class GameApp {
       this.scoreManager.advanceMultiplier();
     };
     for (const lane of this.reentrySystem.lanes) {
+      lane.onRollover = () => {
+        if (!this.gameState.isTilted) {
+          this.missionControl.handleHit('lane');
+        }
+      };
       this.scene.add(lane.mesh);
     }
 
-    // 8. Initialize Launch Ramp & Wire Habitrail
+    // 9. Initialize Launch Ramp & Wire Habitrail
     this.launchRamp = new LaunchRamp({
       id: 'cannon-launch-ramp',
       config: TABLE_LAYOUT.LAUNCH_RAMP,
       material: this.physicsWorld.wallMaterial,
     });
+    this.launchRamp.onRampEnter = () => {
+      if (!this.gameState.isTilted && this.missionControl.getState() === 'REQUESTED') {
+        this.missionControl.acceptMission();
+      }
+    };
     this.launchRamp.onRampComplete = (ramp) => {
       if (!this.gameState.isTilted) {
         this.scoreManager.addPoints(ramp.score);
+        this.missionControl.handleHit('ramp');
       }
     };
     this.physicsWorld.addLaunchRamp(this.launchRamp);
     this.scene.add(this.launchRamp.mesh);
 
-    // 9. Initialize Booster Drop Targets
+    // 10. Initialize Booster Drop Targets
     this.boosterDropTargets = new DropTargetBank({
       id: 'booster-drop-targets',
       configs: TABLE_LAYOUT.DROP_TARGETS.BOOSTER,
@@ -200,12 +234,14 @@ export class GameApp {
       target.onHit = (t) => {
         if (!this.gameState.isTilted) {
           this.scoreManager.addPoints(t.score);
+          this.missionControl.handleHit('drop_target');
         }
       };
     }
     this.boosterDropTargets.onBankCleared = () => {
       this.leftSpinner.setBoosted(true);
       this.rightSpinner.setBoosted(true);
+      this.missionControl.refuel(20);
       if (!this.gameState.isTilted) {
         this.scoreManager.addPoints(50000);
       }
@@ -215,7 +251,7 @@ export class GameApp {
       this.scene.add(target.mesh);
     }
 
-    // 10. Initialize Spot Target Banks
+    // 11. Initialize Spot Target Banks
     this.missionSpotTargets = new SpotTargetBank({
       id: 'mission-spot-targets',
       configs: TABLE_LAYOUT.SPOT_TARGETS.MISSION,
@@ -225,6 +261,11 @@ export class GameApp {
       target.onHit = (_t, score) => {
         if (!this.gameState.isTilted) {
           this.scoreManager.addPoints(score);
+          if (this.missionControl.getState() === 'IDLE') {
+            this.missionControl.requestMission();
+          } else {
+            this.missionControl.handleHit('spot_target');
+          }
         }
       };
     }
@@ -242,6 +283,7 @@ export class GameApp {
       target.onHit = (_t, score) => {
         if (!this.gameState.isTilted) {
           this.scoreManager.addPoints(score);
+          this.missionControl.handleHit('medal_target');
         }
       };
     }
@@ -263,6 +305,7 @@ export class GameApp {
       target.onHit = (_t, score) => {
         if (!this.gameState.isTilted) {
           this.scoreManager.addPoints(score);
+          this.missionControl.handleHit('hazard_left');
         }
       };
     }
@@ -280,6 +323,7 @@ export class GameApp {
       target.onHit = (_t, score) => {
         if (!this.gameState.isTilted) {
           this.scoreManager.addPoints(score);
+          this.missionControl.handleHit('hazard_right');
         }
       };
     }
@@ -288,7 +332,7 @@ export class GameApp {
       this.scene.add(target.mesh);
     }
 
-    // 11. Initialize 3 UFO Beams (Yellow, Red, Green)
+    // 12. Initialize 3 UFO Beams (Yellow, Red, Green)
     this.ufoBeams = [
       new UfoBeamSinkHole({
         id: 'ufo-beam-yellow',
@@ -304,7 +348,7 @@ export class GameApp {
       }),
     ];
 
-    // 12. Initialize Left & Right Alien Spinners
+    // 13. Initialize Left & Right Alien Spinners
     this.leftSpinner = new AlienSpinner({
       id: 'spinner-left',
       config: TABLE_LAYOUT.SPINNERS.LEFT,
@@ -312,6 +356,7 @@ export class GameApp {
     this.leftSpinner.onSpin = (spinner, newSpins) => {
       if (!this.gameState.isTilted) {
         this.scoreManager.addPoints(spinner.getPointValue() * newSpins);
+        this.missionControl.handleHit('spinner', { spins: newSpins });
       }
     };
     this.physicsWorld.addSpinner(this.leftSpinner);
@@ -324,12 +369,13 @@ export class GameApp {
     this.rightSpinner.onSpin = (spinner, newSpins) => {
       if (!this.gameState.isTilted) {
         this.scoreManager.addPoints(spinner.getPointValue() * newSpins);
+        this.missionControl.handleHit('spinner', { spins: newSpins });
       }
     };
     this.physicsWorld.addSpinner(this.rightSpinner);
     this.scene.add(this.rightSpinner.mesh);
 
-    // 13. Initialize Space Warp Rollover
+    // 14. Initialize Space Warp Rollover
     this.spaceWarp = new SpaceWarpRollover({
       id: 'space-warp-rollover',
       config: TABLE_LAYOUT.SPACE_WARP,
@@ -337,12 +383,13 @@ export class GameApp {
     this.spaceWarp.onWarp = (warp) => {
       if (!this.gameState.isTilted) {
         this.scoreManager.addPoints(warp.score);
+        this.missionControl.handleHit('space_warp');
       }
     };
     this.physicsWorld.addSpaceWarp(this.spaceWarp);
     this.scene.add(this.spaceWarp.mesh);
 
-    // 14. Initialize Left Outlane Shield Kickback
+    // 15. Initialize Left Outlane Shield Kickback
     this.kickback = new ShieldKickback({
       id: 'left-shield-kickback',
       config: TABLE_LAYOUT.KICKBACK,
@@ -351,12 +398,13 @@ export class GameApp {
     this.kickback.onKickbackFired = (k) => {
       if (!this.gameState.isTilted) {
         this.scoreManager.addPoints(k.score);
+        this.missionControl.handleHit('kickback');
       }
     };
     this.physicsWorld.addKickback(this.kickback);
     this.scene.add(this.kickback.mesh);
 
-    // 15. Initialize Table Bottom Drain Sensor
+    // 16. Initialize Table Bottom Drain Sensor
     this.drainSensor = new DrainSensor({
       id: 'bottom-drain-sensor',
       config: TABLE_LAYOUT.DRAIN,
@@ -367,11 +415,12 @@ export class GameApp {
         this.scoreManager.awardEndOfBallBonus({
           missions: 0,
           medals: this.medalSpotTargets.getLitCount(),
-          fuel: 0,
-          rank: 1,
+          fuel: Math.floor(this.missionControl.energyCore.getFuel()),
+          rank: this.missionControl.rankManager.getRankNumber(),
           isTilted: this.gameState.isTilted,
         });
       }
+      this.missionControl.handleBallDrain();
       this.gameState.handleBallDrain(pinball);
       this.drainSensor.reset();
       this.updateHUD();
@@ -379,7 +428,7 @@ export class GameApp {
     this.physicsWorld.addDrainSensor(this.drainSensor);
     this.scene.add(this.drainSensor.mesh);
 
-    // 16. Initialize Center Post (Barrier Drone)
+    // 17. Initialize Center Post (Barrier Drone)
     this.centerPost = new CenterPost({
       id: 'center-barrier-drone',
       config: TABLE_LAYOUT.CENTER_POST,
@@ -388,12 +437,13 @@ export class GameApp {
     this.centerPost.onBallSaved = (post) => {
       if (!this.gameState.isTilted) {
         this.scoreManager.addPoints(post.score);
+        this.missionControl.handleHit('center_post');
       }
     };
     this.physicsWorld.addCenterPost(this.centerPost);
     this.scene.add(this.centerPost.mesh);
 
-    // 17. Initialize Mothership Tractor Beam (Gravity Well)
+    // 18. Initialize Mothership Tractor Beam (Gravity Well)
     this.tractorBeam = new MothershipTractorBeam({
       id: TABLE_LAYOUT.MOTHERSHIP_TRACTOR_BEAM.id,
       position: TABLE_LAYOUT.MOTHERSHIP_TRACTOR_BEAM.position,
@@ -408,13 +458,14 @@ export class GameApp {
     this.tractorBeam.onCapture = (_ball, score) => {
       if (!this.gameState.isTilted) {
         this.scoreManager.addPoints(score);
+        this.missionControl.handleHit('tractor_beam');
         this.updateHUD();
       }
     };
     this.physicsWorld.addTractorBeam(this.tractorBeam);
     this.scene.add(this.tractorBeam.mesh);
 
-    // 18. Initialize UFO Beam Progression System (P2.5)
+    // 19. Initialize UFO Beam Progression System (P2.5)
     this.ufoProgression = new UfoProgressionSystem({
       scoreManager: this.scoreManager,
       gameState: this.gameState,
@@ -427,6 +478,7 @@ export class GameApp {
         if (!this.gameState.isTilted) {
           this.scoreManager.addPoints(b.score);
           this.ufoProgression.registerHit();
+          this.missionControl.handleHit('ufo_beam', { color: b.beamType });
           this.updateHUD();
         }
       };
@@ -434,7 +486,7 @@ export class GameApp {
       this.scene.add(beam.mesh);
     }
 
-    // 19. Initialize Skill Shot Lane (Plunger Lane Indicator Lights)
+    // 20. Initialize Skill Shot Lane (Plunger Lane Indicator Lights)
     this.skillShot = new SkillShotLane({
       id: 'skill-shot-lane',
       config: TABLE_LAYOUT.SKILL_SHOT,
@@ -442,12 +494,13 @@ export class GameApp {
     this.skillShot.onSkillShotAwarded = (_lightIndex, score) => {
       if (!this.gameState.isTilted) {
         this.scoreManager.addPoints(score);
+        this.missionControl.handleHit('skill_shot');
       }
     };
     this.physicsWorld.addSkillShotLane(this.skillShot);
     this.scene.add(this.skillShot.mesh);
 
-    // 18. Initialize Keyboard Controls
+    // 21. Initialize Keyboard Controls
     this.keyboard = new KeyboardManager();
     this.setupKeyboardControls();
 
@@ -456,6 +509,29 @@ export class GameApp {
 
     // Handle Window Resizing
     window.addEventListener('resize', this.onResize);
+  }
+
+  private setupMissionControlListeners(): void {
+    this.missionControl.onProgressLightsChanged = (_count, states) => {
+      this.progressLightsRing.setStates(states);
+    };
+
+    this.missionControl.onPromotion = () => {
+      this.progressLightsRing.celebratePromotion();
+      this.updateHUD();
+    };
+
+    this.missionControl.onFuelChanged = (_fuel, pct, isLow) => {
+      this.energyCoreLadder.setFuelPercentage(pct, isLow);
+    };
+
+    this.missionControl.onTickerMessage = () => {
+      this.updateHUD();
+    };
+
+    this.missionControl.onStateChange = () => {
+      this.updateHUD();
+    };
   }
 
   private setupGameStateListeners(): void {
@@ -565,12 +641,20 @@ export class GameApp {
     const scoreElem = document.getElementById('score-display');
     const multElem = document.getElementById('mult-display');
     const ballElem = document.getElementById('ball-display');
+    const rankElem = document.getElementById('rank-display');
+    const tickerElem = document.getElementById('lcd-ticker');
 
     if (scoreElem) {
       scoreElem.textContent = this.scoreManager.getScore().toLocaleString('en-US');
     }
     if (multElem) {
       multElem.textContent = `${this.scoreManager.getMultiplier()}X`;
+    }
+    if (rankElem && this.missionControl) {
+      rankElem.textContent = this.missionControl.rankManager.getRankTitle().toUpperCase();
+    }
+    if (tickerElem && this.missionControl) {
+      tickerElem.textContent = this.missionControl.ticker.getCurrentMessage();
     }
     if (ballElem) {
       if (this.gameState.isGameOver) {
@@ -609,8 +693,11 @@ export class GameApp {
   }
 
   public stepPhysics(deltaSec: number): void {
-    // 1. Update Game State (ball saver countdown, tilt decay)
+    // 1. Update Game State & Mission Control
     this.gameState.update(deltaSec);
+    this.missionControl.update(deltaSec);
+    this.progressLightsRing.update(deltaSec);
+    this.energyCoreLadder.update(deltaSec);
 
     // 2. Update Flippers & Plunger
     this.leftFlipper.update(deltaSec);
@@ -684,3 +771,4 @@ if (typeof document !== 'undefined') {
     }
   });
 }
+

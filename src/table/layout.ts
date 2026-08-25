@@ -444,5 +444,25 @@ export const TABLE_LAYOUT = {
     score: 50000,
     color: COLORS.NEON_CYAN,
   } as TractorBeamLayoutConfig,
+
+  // 17. 18 Progress Lights Ring (Arranged in a circle at table center around rank insignia)
+  PROGRESS_LIGHTS_RING: {
+    id: 'progress-lights-ring',
+    center: { x: 0, y: -4.0, z: 0.08 } as Position3D,
+    radius: 2.6,
+    count: 18,
+    color: COLORS.NEON_CYAN,
+    promotionColor: COLORS.NEON_YELLOW,
+  },
+
+  // 18. Energy Core Fuel Indicator Ladder (Vertical light column in upper-left)
+  ENERGY_CORE_LADDER: {
+    id: 'energy-core-ladder',
+    position: { x: -8.2, y: 11.0, z: 0.08 } as Position3D,
+    count: 6,
+    spacing: 1.2,
+    color: COLORS.NEON_GREEN,
+    lowFuelColor: COLORS.NEON_PINK,
+  },
 } as const;
 
