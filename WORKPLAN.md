@@ -141,9 +141,9 @@
 
 | ID | Task | Red-first Artifact | Done When | Status |
 | :--- | :--- | :--- | :--- | :---: |
-| P7.1 | Vite single-file build | Multi-file → single index.html | `vite-plugin-singlefile` produces one file with all assets inlined | 🔴 |
-| P7.2 | Performance optimization | <60 FPS → stable FPS | 60 FPS desktop, 30+ FPS mobile on mid-range | 🔴 |
-| P7.3 | Cross-browser testing (desktop + mobile) | Untested → 6 browser configs pass | Chrome, Firefox, Safari, Edge + Chrome Android + Safari iOS | 🔴 |
-| P7.4 | Final playtesting + tuning | Untuned → balanced and fun | All 17 missions completable, physics feel good | 🔴 |
+| P7.1 | Vite single-file build | Multi-file → single index.html | `vite-plugin-singlefile` produces one file with all assets inlined | 🟢 |
+| P7.2 | Performance optimization | <60 FPS → stable FPS | 60 FPS desktop, 30+ FPS mobile on mid-range | 🟢 |
+| P7.3 | Cross-browser testing (desktop + mobile) | Untested → 6 browser configs pass | Chrome, Firefox, Safari, Edge + Chrome Android + Safari iOS | 🟢 |
+| P7.4 | Final playtesting + tuning | Untuned → balanced and fun | All 17 missions completable, physics feel good | 🟢 |
 
-**Milestone**: Single `index.html` file, fully playable on desktop and mobile ✅/❌
+**Milestone**: Single `index.html` file, fully playable on desktop and mobile ✅
