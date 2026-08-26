@@ -123,17 +123,17 @@
 
 | ID | Task | Red-first Artifact | Done When | Status |
 | :--- | :--- | :--- | :--- | :---: |
-| P6.1 | Touch input: flipper tap zones | No touch → tapping sides triggers flippers | Left/right tap zones work, 3rd flipper upper-left zone | 🔴 |
-| P6.2 | Touch input: plunger swipe/hold | No plunger on mobile → swipe/hold launches ball | Swipe distance or hold duration controls power | 🔴 |
-| P6.3 | DeviceMotion nudge (tilt-to-nudge) | No tilt input → shaking phone nudges table | iOS permission prompt, Android auto, fallback buttons | 🔴 |
-| P6.4 | Responsive portrait layout | Desktop-only layout → portrait-first responsive | Table fills width in portrait, HUD collapses to compact bar | 🔴 |
-| P6.5 | Compact mobile HUD | HUD overlaps/unreadable → scaled and compact | Fonts scale, touch targets ≥44px, ticker single-line | 🔴 |
-| P6.6 | Performance tier auto-detection | Same effects everywhere → adaptive quality | Full/reduced/basic tiers based on frame timing | 🔴 |
-| P6.7 | Canvas DPI scaling | Blurry on Retina → crisp rendering | `devicePixelRatio` applied, sharp on HiDPI | 🔴 |
-| P6.8 | Fallback nudge buttons | No nudge if DeviceMotion denied → on-screen buttons | L/R/Up nudge buttons appear when tilt unavailable | 🔴 |
-| P6.9 | Mobile browser testing | Untested → 2 mobile browsers pass | Chrome Android + Safari iOS playable | 🔴 |
+| P6.1 | Touch input: flipper tap zones | No touch → tapping sides triggers flippers | Left/right tap zones work, 3rd flipper upper-left zone | 🟢 |
+| P6.2 | Touch input: plunger swipe/hold | No plunger on mobile → swipe/hold launches ball | Swipe distance or hold duration controls power | 🟢 |
+| P6.3 | DeviceMotion nudge (tilt-to-nudge) | No tilt input → shaking phone nudges table | iOS permission prompt, Android auto, fallback buttons | 🟢 |
+| P6.4 | Responsive portrait layout | Desktop-only layout → portrait-first responsive | Table fills width in portrait, HUD collapses to compact bar | 🟢 |
+| P6.5 | Compact mobile HUD | HUD overlaps/unreadable → scaled and compact | Fonts scale, touch targets ≥44px, ticker single-line | 🟢 |
+| P6.6 | Performance tier auto-detection | Same effects everywhere → adaptive quality | Full/reduced/basic tiers based on frame timing | 🟢 |
+| P6.7 | Canvas DPI scaling | Blurry on Retina → crisp rendering | `devicePixelRatio` applied, sharp on HiDPI | 🟢 |
+| P6.8 | Fallback nudge buttons | No nudge if DeviceMotion denied → on-screen buttons | L/R/Up nudge buttons appear when tilt unavailable | 🟢 |
+| P6.9 | Mobile browser testing | Untested → 2 mobile browsers pass | Chrome Android + Safari iOS playable | 🟢 |
 
-**Milestone**: Fully playable on mobile with touch controls ✅/❌
+**Milestone**: Fully playable on mobile with touch controls ✅
 
 ---
 
