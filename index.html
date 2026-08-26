@@ -24,6 +24,7 @@
         user-select: none;
         -webkit-user-select: none;
         touch-action: none;
+        -webkit-touch-callout: none;
       }
 
       html, body {
@@ -33,6 +34,7 @@
         background-color: var(--color-bg);
         color: #ffffff;
         font-family: var(--font-mono);
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       }
 
       #app {
@@ -59,6 +61,7 @@
         width: 100%;
         height: 100%;
         outline: none;
+        touch-action: none;
       }
 
       #hud-overlay {
@@ -71,7 +74,8 @@
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        padding: 12px;
+        padding: 10px;
+        z-index: 20;
       }
 
       .hud-header {
@@ -81,16 +85,16 @@
         background: rgba(5, 8, 16, 0.88);
         border: 1px solid var(--color-hud-border);
         border-radius: 4px;
-        padding: 8px 16px;
+        padding: 8px 14px;
         box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
         pointer-events: auto;
         flex-wrap: wrap;
-        gap: 10px;
+        gap: 8px;
       }
 
       .hud-title {
         color: var(--color-neon-green);
-        font-size: 1rem;
+        font-size: 0.95rem;
         font-weight: bold;
         letter-spacing: 2px;
         text-shadow: 0 0 8px rgba(0, 255, 102, 0.6);
@@ -98,8 +102,8 @@
 
       .hud-info {
         display: flex;
-        gap: 14px;
-        font-size: 0.85rem;
+        gap: 12px;
+        font-size: 0.8rem;
         color: var(--color-neon-cyan);
         align-items: center;
         flex-wrap: wrap;
@@ -115,23 +119,29 @@
         color: var(--color-neon-cyan);
         font-family: var(--font-mono);
         font-size: 0.75rem;
-        padding: 3px 8px;
-        border-radius: 3px;
+        padding: 6px 10px;
+        border-radius: 4px;
         cursor: pointer;
+        min-height: 44px;
+        min-width: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         transition: all 0.2s ease;
+        touch-action: manipulation;
       }
 
-      .hud-btn:hover {
+      .hud-btn:hover, .hud-btn:active {
         background: rgba(0, 229, 255, 0.35);
         box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
       }
 
       .hud-ticker-bar {
-        margin-top: 8px;
+        margin-top: 6px;
         background: rgba(3, 5, 12, 0.9);
         border: 1px solid rgba(0, 255, 102, 0.3);
         border-radius: 4px;
-        padding: 6px 14px;
+        padding: 5px 12px;
         box-shadow: 0 0 8px rgba(0, 255, 102, 0.15);
         display: flex;
         align-items: center;
@@ -140,18 +150,173 @@
 
       .hud-ticker-text {
         font-family: var(--font-mono);
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         font-weight: bold;
         color: var(--color-neon-green);
         letter-spacing: 1px;
         text-shadow: 0 0 6px rgba(0, 255, 102, 0.7);
         white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
+
+      /* Mobile Touch Overlay & Zones */
+      #touch-controls {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      .touch-zone-indicator {
+        position: absolute;
+        border: 1px dashed rgba(0, 229, 255, 0.12);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      body.is-mobile .touch-zone-indicator {
+        opacity: 0.35;
+      }
+
+      #zone-left-flipper {
+        bottom: 0;
+        left: 0;
+        width: 50%;
+        height: 65%;
+        border-right: 1px dashed rgba(0, 255, 102, 0.2);
+      }
+
+      #zone-right-flipper {
+        bottom: 0;
+        right: 0;
+        width: 50%;
+        height: 65%;
+      }
+
+      #zone-upper-left {
+        top: 0;
+        left: 0;
+        width: 50%;
+        height: 35%;
+        border-bottom: 1px dashed rgba(255, 238, 0, 0.2);
+        border-right: 1px dashed rgba(255, 238, 0, 0.2);
+      }
+
+      /* Mobile Plunger Zone & Visual Drag Meter */
+      #mobile-plunger-zone {
+        position: absolute;
+        bottom: 14px;
+        right: 14px;
+        width: 80px;
+        height: 130px;
+        background: rgba(10, 16, 32, 0.75);
+        border: 2px solid var(--color-neon-cyan);
+        border-radius: 8px;
+        box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 4px;
+        z-index: 30;
+        pointer-events: auto;
+        touch-action: none;
+      }
+
+      .plunger-meter-label {
+        font-size: 0.65rem;
+        color: var(--color-neon-cyan);
+        font-weight: bold;
+        letter-spacing: 1px;
+        text-align: center;
+      }
+
+      .plunger-track {
+        width: 24px;
+        height: 70px;
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid var(--color-neon-cyan);
+        border-radius: 12px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      #plunger-fill-meter {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 0%;
+        background: linear-gradient(0deg, var(--color-neon-green) 0%, var(--color-neon-yellow) 70%, var(--color-neon-pink) 100%);
+        transition: height 0.05s ease;
+      }
+
+      .plunger-hint {
+        font-size: 0.6rem;
+        color: #99bbdd;
+      }
+
+      /* Fallback Virtual Nudge Bar */
+      #virtual-nudge-bar {
+        position: absolute;
+        bottom: 14px;
+        left: 14px;
+        display: flex;
+        gap: 8px;
+        z-index: 30;
+        pointer-events: auto;
+      }
+
+      .nudge-btn {
+        background: rgba(255, 0, 127, 0.18);
+        border: 1px solid var(--color-neon-pink);
+        color: var(--color-neon-pink);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        font-weight: bold;
+        min-height: 44px;
+        min-width: 50px;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+        touch-action: manipulation;
+      }
+
+      .nudge-btn:active {
+        background: rgba(255, 0, 127, 0.5);
+        box-shadow: 0 0 10px rgba(255, 0, 127, 0.8);
+        transform: scale(0.95);
+      }
+
+      #motion-perm-btn {
+        background: rgba(255, 238, 0, 0.2);
+        border: 1px solid var(--color-neon-yellow);
+        color: var(--color-neon-yellow);
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        min-height: 44px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        pointer-events: auto;
       }
 
       #fps-display {
         position: absolute;
-        bottom: 12px;
-        left: 12px;
+        bottom: 68px;
+        left: 14px;
         background: rgba(0, 0, 0, 0.7);
         border: 1px solid var(--color-neon-yellow);
         color: var(--color-neon-yellow);
@@ -190,10 +355,10 @@
       }
 
       .attract-title {
-        font-size: 2.4rem;
+        font-size: 2.2rem;
         font-weight: 900;
         color: #ffffff;
-        letter-spacing: 6px;
+        letter-spacing: 4px;
         text-transform: uppercase;
         background: linear-gradient(180deg, #00ff66 0%, #00e5ff 100%);
         -webkit-background-clip: text;
@@ -204,36 +369,39 @@
 
       .attract-subtitle {
         color: var(--color-neon-yellow);
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         letter-spacing: 2px;
-        margin-bottom: 28px;
+        margin-bottom: 24px;
         text-shadow: 0 0 8px rgba(255, 238, 0, 0.5);
       }
 
       .attract-prompt {
-        font-size: 1.15rem;
+        font-size: 1.05rem;
         font-weight: bold;
         color: var(--color-neon-green);
-        letter-spacing: 3px;
+        letter-spacing: 2px;
         padding: 12px 24px;
         border: 2px solid var(--color-neon-green);
         border-radius: 6px;
         background: rgba(0, 255, 102, 0.1);
         box-shadow: 0 0 16px rgba(0, 255, 102, 0.35);
-        margin-bottom: 28px;
-        transition: opacity 0.2s ease;
+        margin-bottom: 24px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .attract-controls-box {
         background: rgba(10, 15, 30, 0.85);
         border: 1px solid rgba(0, 229, 255, 0.3);
         border-radius: 6px;
-        padding: 12px 20px;
+        padding: 12px 18px;
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
-        gap: 16px;
-        font-size: 0.8rem;
+        gap: 14px;
+        font-size: 0.75rem;
         color: #ccddee;
         max-width: 600px;
       }
@@ -256,7 +424,7 @@
         justify-content: center;
         align-items: center;
         z-index: 150;
-        padding: 20px;
+        padding: 16px;
       }
 
       .modal-card {
@@ -266,15 +434,15 @@
         box-shadow: 0 0 24px rgba(255, 0, 127, 0.4), inset 0 0 12px rgba(0, 229, 255, 0.2);
         width: 100%;
         max-width: 480px;
-        padding: 24px;
+        padding: 20px;
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 14px;
         text-align: center;
       }
 
       .modal-title {
-        font-size: 2rem;
+        font-size: 1.8rem;
         font-weight: 900;
         letter-spacing: 4px;
         color: var(--color-neon-pink);
@@ -284,28 +452,28 @@
       .modal-stats {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        gap: 8px;
         background: rgba(4, 7, 16, 0.8);
         border: 1px solid var(--color-hud-border);
         border-radius: 6px;
-        padding: 12px;
-        font-size: 0.85rem;
+        padding: 10px;
+        font-size: 0.8rem;
       }
 
       .stat-item {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 2px;
       }
 
       .stat-label {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         color: var(--color-neon-cyan);
         letter-spacing: 1px;
       }
 
       .stat-val {
-        font-size: 1.1rem;
+        font-size: 1rem;
         font-weight: bold;
         color: #ffffff;
       }
@@ -314,28 +482,28 @@
         background: rgba(0, 255, 102, 0.08);
         border: 1px dashed var(--color-neon-green);
         border-radius: 6px;
-        padding: 12px;
+        padding: 10px;
       }
 
       .hs-prompt {
         color: var(--color-neon-green);
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         font-weight: bold;
         letter-spacing: 2px;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
       }
 
       .hs-input-row {
         display: flex;
         justify-content: center;
-        gap: 10px;
+        gap: 8px;
       }
 
       #initials-input {
-        width: 90px;
+        width: 80px;
         text-align: center;
         font-family: var(--font-mono);
-        font-size: 1.3rem;
+        font-size: 1.2rem;
         font-weight: 900;
         letter-spacing: 4px;
         color: #ffffff;
@@ -345,16 +513,13 @@
         padding: 4px 8px;
         text-transform: uppercase;
         outline: none;
-      }
-
-      #initials-input:focus {
-        box-shadow: 0 0 10px rgba(0, 255, 102, 0.6);
+        min-height: 44px;
       }
 
       .modal-leaderboard {
         width: 100%;
         border-collapse: collapse;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         margin-top: 4px;
       }
 
@@ -362,17 +527,17 @@
         color: var(--color-neon-cyan);
         border-bottom: 1px solid var(--color-hud-border);
         padding: 4px;
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         letter-spacing: 1px;
       }
 
       .modal-leaderboard td {
-        padding: 4px 6px;
+        padding: 3px 6px;
       }
 
       .modal-actions {
         display: flex;
-        gap: 12px;
+        gap: 10px;
         justify-content: center;
       }
 
@@ -381,17 +546,21 @@
         border: 1px solid var(--color-neon-green);
         color: var(--color-neon-green);
         font-family: var(--font-mono);
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         font-weight: bold;
         letter-spacing: 1px;
-        padding: 8px 16px;
+        padding: 8px 14px;
         border-radius: 4px;
         cursor: pointer;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         transition: all 0.2s ease;
         flex: 1;
       }
 
-      .modal-btn:hover {
+      .modal-btn:hover, .modal-btn:active {
         background: rgba(0, 255, 102, 0.4);
         box-shadow: 0 0 12px rgba(0, 255, 102, 0.5);
       }
@@ -402,9 +571,35 @@
         color: var(--color-neon-cyan);
       }
 
-      .modal-btn.secondary:hover {
-        background: rgba(0, 229, 255, 0.35);
-        box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
+      /* Compact Mobile HUD & Portrait Rules (P6.4 & P6.5) */
+      @media (max-width: 768px), (orientation: portrait) {
+        .hud-header {
+          padding: 6px 10px;
+          gap: 6px;
+        }
+
+        .hud-title {
+          font-size: 0.85rem;
+        }
+
+        .hud-info {
+          font-size: 0.72rem;
+          gap: 8px;
+        }
+
+        .hud-ticker-text {
+          font-size: 0.72rem;
+        }
+
+        .attract-title {
+          font-size: 1.8rem;
+          letter-spacing: 3px;
+        }
+
+        .attract-prompt {
+          font-size: 0.95rem;
+          padding: 10px 18px;
+        }
       }
     </style>
   </head>
@@ -413,6 +608,30 @@
       <div id="game-container">
         <canvas id="pinball-canvas"></canvas>
 
+        <!-- Mobile Touch Controls & Visual Zones (P6.1, P6.2) -->
+        <div id="touch-controls">
+          <div id="zone-left-flipper" class="touch-zone-indicator"></div>
+          <div id="zone-right-flipper" class="touch-zone-indicator"></div>
+          <div id="zone-upper-left" class="touch-zone-indicator"></div>
+        </div>
+
+        <!-- Mobile Plunger Touch Pull & Launch Zone (P6.2) -->
+        <div id="mobile-plunger-zone">
+          <div class="plunger-meter-label">PLUNGER</div>
+          <div class="plunger-track">
+            <div id="plunger-fill-meter"></div>
+          </div>
+          <div class="plunger-hint">PULL / TAP</div>
+        </div>
+
+        <!-- Fallback Virtual Nudge Bar (P6.8) -->
+        <div id="virtual-nudge-bar">
+          <button id="nudge-left-btn" class="nudge-btn" aria-label="Nudge Left">◀ NUDGE</button>
+          <button id="nudge-up-btn" class="nudge-btn" aria-label="Nudge Up">▲ NUDGE</button>
+          <button id="nudge-right-btn" class="nudge-btn" aria-label="Nudge Right">NUDGE ▶</button>
+          <button id="motion-perm-btn" aria-label="Enable Tilt Motion">TILT: OFF</button>
+        </div>
+
         <!-- Attract Mode Title Overlay -->
         <div id="attract-overlay">
           <div class="attract-badge">★ DEFENDER CORPS ★</div>
@@ -420,12 +639,12 @@
           <div class="attract-subtitle">SPACE INVADERS 3D PINBALL • 9 RANKS • 17 MISSIONS</div>
           <div id="attract-prompt" class="attract-prompt">PRESS SPACE OR TAP TO LAUNCH</div>
           <div class="attract-controls-box">
-            <div><span>Z / M</span> FLIPPERS</div>
-            <div><span>SPACE</span> LAUNCH</div>
-            <div><span>X / . / ↑</span> NUDGE</div>
-            <div><span>C</span> CAMERA</div>
-            <div><span>S</span> SOUND</div>
-            <div><span>Y</span> FPS</div>
+            <div><span>TAP LEFT/RIGHT</span> FLIPPERS</div>
+            <div><span>HOLD / PULL</span> PLUNGER</div>
+            <div><span>SHAKE / BUTTONS</span> NUDGE</div>
+            <div><span>Z / M / SPACE</span> KEYBOARD</div>
+            <div><span>C</span> CAM</div>
+            <div><span>S</span> SFX</div>
           </div>
         </div>
 
@@ -440,8 +659,8 @@
                 <div>MULT: <span id="mult-display">1X</span></div>
                 <div>BALL: <span id="ball-display">1</span></div>
                 <div>RANK: <span id="rank-display">ROOKIE DEFENDER</span></div>
-                <button id="camera-btn" class="hud-btn">CAM: <span id="camera-mode-display">FIXED</span></button>
-                <button id="sound-btn" class="hud-btn">SFX: <span id="sound-status-display">ON</span></button>
+                <button id="camera-btn" class="hud-btn" aria-label="Toggle Camera Mode">CAM: <span id="camera-mode-display">FIXED</span></button>
+                <button id="sound-btn" class="hud-btn" aria-label="Toggle Sound">SFX: <span id="sound-status-display">ON</span></button>
               </div>
             </header>
             <div class="hud-ticker-bar">

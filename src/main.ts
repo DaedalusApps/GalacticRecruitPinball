@@ -6,6 +6,10 @@ import { Pinball } from './physics/ball';
 import { Flipper } from './physics/flipper';
 import { Plunger } from './physics/plunger';
 import { KeyboardManager } from './input/keyboard';
+import { TouchManager } from './input/touch';
+import { MotionManager, NudgeDirection } from './input/motion';
+import { ResponsiveLayoutManager } from './ui/responsive';
+import { PerformanceTierManager } from './rendering/performance';
 import { TABLE_LAYOUT } from './table/layout';
 import { ScoreManager } from './game/scoring';
 import { GameStateManager } from './game/state';
@@ -90,6 +94,12 @@ export class GameApp {
   public gameOverModal: GameOverModal;
   public cheats: CheatSystem;
 
+  // Phase 6 Mobile Mode & Adaptive Performance Systems
+  public touch: TouchManager;
+  public motion: MotionManager;
+  public layoutManager: ResponsiveLayoutManager;
+  public perfTierManager: PerformanceTierManager;
+
   public isRunning: boolean = false;
   private animFrameId: number | null = null;
   private lastTime: number = 0;
@@ -100,20 +110,22 @@ export class GameApp {
   private currentFps: number = 60;
 
   constructor(canvas: HTMLCanvasElement) {
-    // 1. Initialize Table Scene (Three.js Scene, Pinball Camera, Lights, Playfield, Cabinet)
-    const aspect = canvas.clientWidth / canvas.clientHeight || 1;
+    // 1. Initialize Responsive Layout Manager & Clamped DPI (P6.4, P6.7)
+    this.layoutManager = new ResponsiveLayoutManager();
+    const aspect = canvas.clientWidth / (canvas.clientHeight || 1) || 1;
     this.tableScene = new TableScene(aspect);
     this.scene = this.tableScene.scene;
     this.camera = this.tableScene.camera;
 
-    // 2. Initialize WebGL Renderer
+    // 2. Initialize WebGL Renderer with DPI clamping
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
       powerPreference: 'high-performance',
     });
     this.renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const dpr = this.layoutManager.getClampedPixelRatio();
+    this.renderer.setPixelRatio(dpr);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -144,6 +156,14 @@ export class GameApp {
     });
     this.cameraManager.setMode(CameraMode.ATTRACT);
     this.attractMode.start();
+
+    // 5. Initialize Adaptive Performance Tier Manager (P6.6)
+    this.perfTierManager = new PerformanceTierManager({
+      postProcessing: this.postProcessing,
+      particleSystem: this.particleSystem,
+      renderer: this.renderer,
+      spotLight: this.tableScene.spotLight,
+    });
 
     // 5. Initialize Score, Game State & Mission Control Managers
     this.scoreManager = new ScoreManager();
@@ -656,17 +676,30 @@ export class GameApp {
     this.physicsWorld.addSkillShotLane(this.skillShot);
     this.scene.add(this.skillShot.mesh);
 
-    // 23. Initialize Keyboard Controls, Audio Toggles & Camera Controls
+    // 23. Initialize Input Systems: Keyboard, Touch (P6.1/P6.2), Motion (P6.3), Nudge Bar (P6.8)
     this.keyboard = new KeyboardManager();
+    this.touch = new TouchManager();
+    this.motion = new MotionManager();
+
     this.setupKeyboardControls();
+    this.setupTouchControls();
+    this.setupMotionControls();
+    this.setupVirtualNudgeBar();
     this.setupCameraControls();
     this.setupAudioControls();
+
+    // Hook Responsive Layout Changes (P6.4, P6.5, P6.7)
+    this.layoutManager.onLayoutChange(() => {
+      this.onResize();
+    });
 
     // Update Initial HUD display
     this.updateHUD();
 
     // Handle Window Resizing
-    window.addEventListener('resize', this.onResize);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this.onResize);
+    }
   }
 
   public onGameStart(): void {
@@ -905,6 +938,160 @@ export class GameApp {
     };
   }
 
+  private setupTouchControls(): void {
+    // Left Flipper Tap Zone (P6.1)
+    this.touch.onFlipperLeft(
+      () => {
+        if (this.attractMode.isActive()) {
+          this.attractMode.requestStart();
+          return;
+        }
+        if (this.gameState.areFlippersEnabled()) {
+          this.soundSynth.playFlipper();
+          this.leftFlipper.activate();
+          this.reentrySystem.cycleLeft();
+        }
+      },
+      () => this.leftFlipper.deactivate()
+    );
+
+    // Right Flipper Tap Zone (P6.1)
+    this.touch.onFlipperRight(
+      () => {
+        if (this.attractMode.isActive()) {
+          this.attractMode.requestStart();
+          return;
+        }
+        if (this.gameState.areFlippersEnabled()) {
+          this.soundSynth.playFlipper();
+          this.rightFlipper.activate();
+          this.reentrySystem.cycleRight();
+        }
+      },
+      () => this.rightFlipper.deactivate()
+    );
+
+    // Upper Left Flipper Tap Zone (P6.1)
+    this.touch.onFlipperUpperLeft(
+      () => {
+        if (this.attractMode.isActive()) {
+          this.attractMode.requestStart();
+          return;
+        }
+        if (this.gameState.areFlippersEnabled()) {
+          this.soundSynth.playFlipper();
+          this.leftFlipper.activate();
+        }
+      },
+      () => this.leftFlipper.deactivate()
+    );
+
+    // Plunger Hold & Swipe Zone (P6.2)
+    this.touch.onPlunger(
+      () => {
+        if (this.attractMode.isActive()) {
+          this.attractMode.requestStart();
+          return;
+        }
+        if (this.gameState.areFlippersEnabled()) {
+          this.soundSynth.playPlungerCharge();
+          this.plunger.startCharge();
+          this.skillShot.startLaunch();
+        }
+      },
+      () => {
+        if (this.gameState.areFlippersEnabled()) {
+          this.soundSynth.playPlungerRelease();
+          this.plunger.release(this.pinball);
+          this.cameraManager.screenShake.addTrauma(0.12);
+          this.particleSystem.emitSlingshotBurst(
+            { x: TABLE.WIDTH / 2 - 1.2, y: -TABLE.LENGTH / 2 + 3.0, z: 0.2 },
+            { x: 0, y: 1, z: 0.1 },
+            COLORS.NEON_CYAN,
+            12
+          );
+          this.gameState.armBallSaver(10.0);
+          const meter = typeof document !== 'undefined' ? document.getElementById('plunger-fill-meter') : null;
+          if (meter) meter.style.height = '0%';
+          this.updateHUD();
+        }
+      },
+      (_dist, ratio) => {
+        const meter = typeof document !== 'undefined' ? document.getElementById('plunger-fill-meter') : null;
+        if (meter) {
+          meter.style.height = `${Math.round(ratio * 100)}%`;
+        }
+      }
+    );
+  }
+
+  private setupMotionControls(): void {
+    // Tilt-to-nudge via accelerometer (P6.3)
+    this.motion.onNudge((direction, force) => {
+      this.handleNudge(direction, force);
+    });
+  }
+
+  private setupVirtualNudgeBar(): void {
+    if (typeof document === 'undefined') return;
+
+    // Fallback on-screen nudge buttons (P6.8)
+    const nudgeLeftBtn = document.getElementById('nudge-left-btn');
+    if (nudgeLeftBtn) {
+      nudgeLeftBtn.addEventListener('click', () => {
+        this.handleNudge('left', 1.0);
+      });
+    }
+
+    const nudgeUpBtn = document.getElementById('nudge-up-btn');
+    if (nudgeUpBtn) {
+      nudgeUpBtn.addEventListener('click', () => {
+        this.handleNudge('up', 1.0);
+      });
+    }
+
+    const nudgeRightBtn = document.getElementById('nudge-right-btn');
+    if (nudgeRightBtn) {
+      nudgeRightBtn.addEventListener('click', () => {
+        this.handleNudge('right', 1.0);
+      });
+    }
+
+    // Motion permission request button (iOS 13+)
+    const motionPermBtn = document.getElementById('motion-perm-btn');
+    if (motionPermBtn) {
+      if (typeof window !== 'undefined' && (window as any).DeviceMotionEvent?.requestPermission) {
+        motionPermBtn.style.display = 'flex';
+        motionPermBtn.addEventListener('click', async () => {
+          const res = await this.motion.requestPermission();
+          if (res === 'granted') {
+            motionPermBtn.textContent = 'TILT: ON';
+            motionPermBtn.style.borderColor = '#00ff66';
+            motionPermBtn.style.color = '#00ff66';
+          } else {
+            motionPermBtn.textContent = 'TILT: OFF';
+          }
+        });
+      }
+    }
+  }
+
+  public handleNudge(direction: NudgeDirection, force: number = 1.0): void {
+    this.gameState.registerNudge(direction, force);
+    this.cameraManager.screenShake.addTrauma(0.25 * force);
+
+    if (!this.gameState.isTilted) {
+      if (direction === 'left') {
+        this.pinball.applyImpulse({ x: 0.5 * force, y: 0.1 * force, z: 0 });
+      } else if (direction === 'right') {
+        this.pinball.applyImpulse({ x: -0.5 * force, y: 0.1 * force, z: 0 });
+      } else if (direction === 'up') {
+        this.pinball.applyImpulse({ x: 0, y: 0.8 * force, z: 0 });
+      }
+    }
+    this.updateHUD();
+  }
+
   private setupKeyboardControls(): void {
     // Flipper controls (also cycles lit re-entry lanes)
     this.keyboard.onFlipperLeft(
@@ -961,30 +1148,15 @@ export class GameApp {
 
     // Nudge controls
     this.keyboard.onNudgeLeft(() => {
-      this.gameState.registerNudge('left', 1.0);
-      this.cameraManager.screenShake.addTrauma(0.25);
-      if (!this.gameState.isTilted) {
-        this.pinball.applyImpulse({ x: 0.5, y: 0.1, z: 0 });
-      }
-      this.updateHUD();
+      this.handleNudge('left', 1.0);
     });
 
     this.keyboard.onNudgeRight(() => {
-      this.gameState.registerNudge('right', 1.0);
-      this.cameraManager.screenShake.addTrauma(0.25);
-      if (!this.gameState.isTilted) {
-        this.pinball.applyImpulse({ x: -0.5, y: 0.1, z: 0 });
-      }
-      this.updateHUD();
+      this.handleNudge('right', 1.0);
     });
 
     this.keyboard.onNudgeUp(() => {
-      this.gameState.registerNudge('up', 1.0);
-      this.cameraManager.screenShake.addTrauma(0.25);
-      if (!this.gameState.isTilted) {
-        this.pinball.applyImpulse({ x: 0, y: 0.8, z: 0 });
-      }
-      this.updateHUD();
+      this.handleNudge('up', 1.0);
     });
   }
 
@@ -1036,10 +1208,13 @@ export class GameApp {
 
   public onResize = (): void => {
     const canvas = this.renderer.domElement;
-    const width = canvas.clientWidth || window.innerWidth;
-    const height = canvas.clientHeight || window.innerHeight;
+    const width = canvas.clientWidth || (typeof window !== 'undefined' ? window.innerWidth : 400);
+    const height = canvas.clientHeight || (typeof window !== 'undefined' ? window.innerHeight : 800);
+
+    const layout = this.layoutManager.updateDimensions(width, height);
     this.tableScene.onResize(width, height);
     this.renderer.setSize(width, height, false);
+    this.renderer.setPixelRatio(layout.clampedPixelRatio);
     this.postProcessing.setSize(width, height);
   };
 
@@ -1127,6 +1302,17 @@ export class GameApp {
       if (fpsVal) fpsVal.textContent = String(this.currentFps);
     }
 
+    // Adaptive Performance Scaling (P6.6)
+    this.perfTierManager.update(deltaSec);
+
+    // Plunger Charge Visual Meter Update (P6.2)
+    if (this.plunger.isCharging) {
+      const meter = document.getElementById('plunger-fill-meter');
+      if (meter) {
+        meter.style.height = `${Math.round(this.plunger.chargeRatio * 100)}%`;
+      }
+    }
+
     this.stepPhysics(deltaSec);
     this.tableScene.update(deltaSec);
     this.postProcessing.render(this.scene, this.camera);
@@ -1136,8 +1322,13 @@ export class GameApp {
 
   public destroy(): void {
     this.stop();
-    window.removeEventListener('resize', this.onResize);
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.onResize);
+    }
     this.keyboard.destroy();
+    this.touch.destroy();
+    this.motion.destroy();
+    this.layoutManager.destroy();
     this.attractMode.destroy();
     this.cheats.destroy();
     this.music.stop();
